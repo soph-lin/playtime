@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id             String         @id @default(uuid())
+  userName       String         @default("New User") @map("user_name")
+  totalPoints    Int            @default(0) @map("total_points")
+  averageTime    Float          @default(0.0) @map("average_time")
+  totalGames     Int            @default(0) @map("total_games")
+  correctGuesses Int            @default(0) @map("correct_guesses")
+  gamesWon       Int            @default(0) @map("games_won")
+  GameSession    GameSession[]
+  savedPlaylists UserPlaylist[] @relation("SavedPlaylists")
+  gameSessions   GameSessionPlayer[]
+}
+
+model Song {
+  id           String         @id @default(uuid())
+  spotifyId    String         @unique @map("spotify_id")
+  soundcloudId String?        @unique @map("soundcloud_id")
+  title        String
+  artist       String
+  album        String?
+  coverUrl     String?        @map("cover_url")
+  permalinkUrl String?        @map("permalink_url")
+  duration     Int?
+  status       String         @default("pending")
+  addedBy      String?        @map("added_by")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt
+  access       String         @default("playable")
+  playlists    PlaylistSong[] @relation("SongToPlaylists")
+}
+
+model SoundCloudToken {
+  id           String   @id @default(cuid())
+  accessToken  String
+  refreshToken String?
+  expiresAt    DateTime
+  status       String   @default("ACTIVE")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Playlist {
+  id          String         @id @default(uuid())
+  name        String
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @default(now()) @map("updated_at")
+  createdBy   String?        @map("created_by")
+  GameSession GameSession[]
+  songs       PlaylistSong[] @relation("PlaylistToSongs")
+  savedBy     UserPlaylist[] @relation("SavedPlaylists")
+}
+
+model PlaylistSong {
+  playlistId String   @map("playlist_id")
+  songId     String   @map("song_id")
+  playlist   Playlist @relation("PlaylistToSongs", fields: [playlistId], references: [id], onDelete: Cascade)
+  song       Song     @relation("SongToPlaylists", fields: [songId], references: [id], onDelete: Cascade)
+
+  @@id([playlistId, songId])
+}
+
+model UserPlaylist {
+  userId     String   @map("user_id")
+  playlistId String   @map("playlist_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  playlist   Playlist @relation("SavedPlaylists", fields: [playlistId], references: [id], onDelete: Cascade)
+  user       User     @relation("SavedPlaylists", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, playlistId])
+}
+
+enum GameStatus {
+  WAITING
+  ACTIVE
+  COMPLETED
+}
+
+model GameSession {
+  id            String          @id @default(uuid())
+  userId        String?         @map("user_id")
+  playlistId    String          @map("playlist_id")
+  code          String          @unique
+  status        GameStatus      @default(WAITING)
+  startedAt     DateTime        @default(now()) @map("started_at")
+  endedAt       DateTime?       @map("ended_at")
+  playlist      Playlist        @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  user          User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  players       GameSessionPlayer[]
+}
+
+model GameSessionPlayer {
+  id            String      @id @default(uuid())
+  sessionId     String      @map("session_id")
+  userId        String?     @map("user_id")
+  nickname      String
+  score         Int         @default(0)
+  correct       Int         @default(0)
+  totalGuesses  Int         @default(0) @map("total_guesses")
+  gameSession   GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user          User?       @relation(fields: [userId], references: [id])
+
+  @@index([sessionId])
+}

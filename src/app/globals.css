@@ -1,0 +1,168 @@
+@import "tailwindcss";
+
+:root {
+  /* Default to blue theme */
+  --background: #ffffff;
+  --foreground: var(--color-slate);
+  --primary: var(--color-cerulean);
+  --primary-foreground: #ffffff;
+  --secondary: var(--color-baby-blue);
+  --secondary-foreground: var(--color-cerulean);
+  --accent: var(--color-accent-blue);
+  --accent-foreground: var(--color-slate);
+  --muted: #f9fafb;
+  --muted-foreground: #6b7280;
+  --border: #e5e7eb;
+  --input: #ffffff;
+  --ring: var(--color-cerulean);
+  --radius: 0.5rem;
+
+  /* Custom accent colors */
+  --color-slate: #1f1f1f;
+  --color-cerulean: #1a73e8;
+  --color-baby-blue: #c2e7ff;
+  --color-accent-blue: #ecf2fc;
+  --color-pink: #ff6d7f;
+  --color-mint: #c4eed0;
+  --color-yellow: #feea8a;
+  --color-orange: #ffc82a;
+  --color-light-gray: #f0f4f9;
+  --color-medium-gray: #dfe3e7;
+}
+
+@theme {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* Base colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+
+  /* Custom colors */
+  --color-slate: #1f1f1f;
+  --color-cerulean: #1a73e8;
+  --color-baby-blue: #c2e7ff;
+  --color-pink: #ff6d7f;
+  --color-mint: #c4eed0;
+  --color-yellow: #feea8a;
+  --color-orange: #ffc82a;
+  --color-light-gray: #ffffff;
+  --color-medium-gray: #dfe3e7;
+}
+
+/* Dark theme */
+[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --primary: var(--color-cerulean);
+  --primary-foreground: #ffffff;
+  --secondary: #1f2937;
+  --secondary-foreground: #f3f4f6;
+  --accent: #374151;
+  --accent-foreground: #f3f4f6;
+  --muted: #111827;
+  --muted-foreground: #9ca3af;
+  --border: #374151;
+  --input: #1f2937;
+  --ring: var(--color-cerulean);
+}
+
+/* Custom theme example */
+[data-theme="cerulean"] {
+  --background: #ffffff;
+  --foreground: #1f1f1f;
+  --primary: var(--color-cerulean);
+  --primary-foreground: #ffffff;
+  --secondary: var(--color-baby-blue);
+  --secondary-foreground: #1f1f1f;
+  --accent: var(--color-mint);
+  --accent-foreground: #1f1f1f;
+  --muted: #f9fafb;
+  --muted-foreground: #6b7280;
+  --border: #e5e7eb;
+  --input: #ffffff;
+  --ring: var(--color-cerulean);
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-nunito), Arial, Helvetica, sans-serif;
+}
+
+@keyframes plop {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+.float-animation-delayed {
+  animation: float 3s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
+.plop-animation {
+  animation: plop 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@layer utilities {
+  .text-outline-sm {
+    text-shadow:
+      1px 0 0 var(--outline-color),
+      -1px 0 0 var(--outline-color),
+      0 1px 0 var(--outline-color),
+      0 -1px 0 var(--outline-color);
+  }
+  .text-outline-md {
+    text-shadow:
+      2px 0 0 var(--outline-color),
+      -2px 0 0 var(--outline-color),
+      0 2px 0 var(--outline-color),
+      0 -2px 0 var(--outline-color);
+  }
+  .text-outline-lg {
+    text-shadow:
+      3px 0 0 var(--outline-color),
+      -3px 0 0 var(--outline-color),
+      0 3px 0 var(--outline-color),
+      0 -3px 0 var(--outline-color),
+      2px 2px 0 var(--outline-color),
+      -2px -2px 0 var(--outline-color),
+      2px -2px 0 var(--outline-color),
+      -2px 2px 0 var(--outline-color);
+  }
+}

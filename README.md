@@ -4,6 +4,10 @@
 
 **Playtime** is a web-based multiplayer game where players compete asynchronously to guess song titles as quickly as possible. The game features interactive 3D visuals, a cumulative leaderboard, and the ability to create and share custom playlists. It integrates with the SoundCloud API to fetch and play songs.
 
+This originally began as a class project for Software Design Lab, and I thought it would be fun to continue it as an independent project. So here you go! 
+
+---
+
 ## Features
 
 ### Core Features

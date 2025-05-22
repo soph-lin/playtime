@@ -14,7 +14,7 @@ export default function MenuScreen() {
   const [showSidePanel, setShowSidePanel] = useState<boolean>(false);
   const [showStartGameModal, setShowStartGameModal] = useState<boolean>(false);
   const setScreen = useGameStore((state) => state.setScreen);
-  const menuOptions = ["Start Game", "Leaderboard", "How to Play", "Settings", "Credits"];
+  const menuOptions = ["Start Game", "Leaderboard", "How to Play", "Settings"];
 
   const getContentForOption = (option: string) => {
     switch (option) {
@@ -58,23 +58,6 @@ export default function MenuScreen() {
                   <option>High</option>
                 </select>
               </div>
-            </div>
-          </div>
-        );
-
-      case "Credits":
-        return (
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold">Development Team</h3>
-
-            <div className="mt-6">
-              <p className="text-lg">Team 41 - CS222 @ UIUC</p>
-              <br></br>
-              <p className="text-md">Kaavya Mahajan</p>
-              <p className="text-md">Sophie Lin</p>
-              <p className="text-md">Sriram Koritala</p>
-              <p className="text-md">Zia Liu</p>
-              {/* <p className="text-sm">Made with ❤️ by Team 41 for CS222 @ UIUC</p> */}
             </div>
           </div>
         );

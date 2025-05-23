@@ -1,7 +1,7 @@
 import { Text } from "@react-three/drei";
 
 export default function Title() {
-  const text = "Name that Tune!";
+  const text = "Playtime!";
 
   return (
     <group>

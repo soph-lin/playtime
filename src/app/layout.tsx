@@ -11,7 +11,7 @@ const nunito = Nunito({
 });
 
 export const metadata: Metadata = {
-  title: "Name that Tune!",
+  title: "Playtime!",
   description: "Musical memory game",
 };
 

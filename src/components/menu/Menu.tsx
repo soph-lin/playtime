@@ -65,7 +65,7 @@ export default function Menu({ options, onConfirm }: MenuProps) {
     <div className="w-full h-full flex flex-col gap-8 justify-center">
       <div className="relative">
         <AnimatedTitle
-          text="Name that Tune! ♫"
+          text="Playtime! ♫"
           onComplete={() => {
             console.log("Title animation complete");
             setTimeout(() => setShowOptions(true), 500);

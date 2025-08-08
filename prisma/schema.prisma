@@ -11,7 +11,7 @@ datasource db {
 
 model User {
   id             String         @id @default(uuid())
-  username       String         @default("New User") @map("username")
+  username       String         @default("New User")
   totalPoints    Int            @default(0) @map("total_points")
   averageTime    Float          @default(0.0) @map("average_time")
   totalGames     Int            @default(0) @map("total_games")

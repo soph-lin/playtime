@@ -39,7 +39,7 @@ export async function UpdateName(newName: string, id: string) {
   await prisma.user.update({
     where: { id },
     data: {
-      userName: newName,
+      username: newName,
     },
   });
 }

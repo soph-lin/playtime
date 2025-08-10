@@ -8,6 +8,9 @@ import { SongCard } from "./SongCard";
 import { Playlist, Song } from "@prisma/client";
 import { getAllSongs } from "@/services/songService";
 import GuessModal from "./GuessModal";
+import UserStats from "./UserStats";
+import { useUser } from "@clerk/nextjs";
+import { useUserExperience } from "@/hooks/useUserExperience";
 
 interface PlaylistWithSongs extends Playlist {
   songs: Song[];
@@ -18,6 +21,8 @@ export default function GameScreen() {
   const setScreen = useGameStore((state) => state.setScreen);
   const leaveGame = useGameStore((state) => state.leaveGame);
   const [isLeaving, setIsLeaving] = useState(false);
+  const { user } = useUser();
+  const { addExperience } = useUserExperience();
 
   const [currentTrack, setCurrentTrack] = useState<Song | null>(null);
   const [isGuessModalOpen, setIsGuessModalOpen] = useState(false);
@@ -112,40 +117,44 @@ export default function GameScreen() {
     }
   };
 
-  const handleGuess = (song: Song) => {
-    setIsGuessModalOpen(false);
-    // Immediately check the guess
-    const correct = song.id === currentTrack?.id;
-    setIsCorrect(correct);
-    setAttempts((prev) => prev + 1);
+  const handleGuess = async (song: Song) => {
+    if (!currentTrack || !session) return;
 
-    // Update player score for both correct and incorrect guesses
-    if (session) {
-      fetch(`/api/sessions/guess`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          playerId: session.players[0].id,
-          trackId: currentTrack?.id,
-          correct: correct,
-          sessionCode: session.code,
-        }),
-      });
-    }
+    const correct = song.id === currentTrack.id;
+    setAttempts((prev) => prev + 1);
+    setIsCorrect(correct);
 
     if (correct) {
       setGameOver(true);
-      toast.success("Correct! 🎉", {
-        duration: 2000,
-        position: "top-center",
-        style: {
-          background: "#4CAF50",
-          color: "white",
-          fontSize: "1.1rem",
-        },
-      });
+
+      // Award experience points for correct guess
+      if (user) {
+        const basePoints = 10;
+        const speedBonus = Math.max(0, 5 - attempts); // Bonus for fewer attempts
+        const totalPoints = basePoints + speedBonus;
+
+        await addExperience(totalPoints);
+
+        toast.success(`Correct! 🎉 +${totalPoints} XP`, {
+          duration: 2000,
+          position: "top-center",
+          style: {
+            background: "#4CAF50",
+            color: "white",
+            fontSize: "1.1rem",
+          },
+        });
+      } else {
+        toast.success("Correct! 🎉", {
+          duration: 2000,
+          position: "top-center",
+          style: {
+            background: "#4CAF50",
+            color: "white",
+            fontSize: "1.1rem",
+          },
+        });
+      }
     } else {
       toast.error("Not quite! Try again!", {
         duration: 2000,
@@ -193,6 +202,9 @@ export default function GameScreen() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      {/* User Stats - Top Left */}
+      <UserStats />
+
       <div className="absolute top-4 right-4">
         <button
           onClick={handleLeaveGame}
@@ -202,6 +214,7 @@ export default function GameScreen() {
           {isLeaving ? "Leaving..." : "Leave Game"}
         </button>
       </div>
+
       <main className="flex-1 flex flex-col p-4">
         {currentTrack && (
           <div className="flex-1 flex items-center justify-center mb-8">
@@ -217,6 +230,7 @@ export default function GameScreen() {
           </div>
         )}
       </main>
+
       <GuessModal
         isOpen={isGuessModalOpen}
         onClose={() => setIsGuessModalOpen(false)}

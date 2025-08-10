@@ -9,18 +9,43 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+/* USER PROFILE */
+
 model User {
-  id             String         @id @default(uuid())
-  username       String         @default("New User")
-  totalPoints    Int            @default(0) @map("total_points")
-  averageTime    Float          @default(0.0) @map("average_time")
-  totalGames     Int            @default(0) @map("total_games")
-  correctGuesses Int            @default(0) @map("correct_guesses")
-  gamesWon       Int            @default(0) @map("games_won")
-  GameSession    GameSession[]
-  savedPlaylists UserPlaylist[] @relation("SavedPlaylists")
+  id             String              @id @default(uuid())
+  clerkId        String              @unique @map("clerk_id")
+  email          String
+  firstName      String?             @map("first_name")
+  lastName       String?             @map("last_name")
+  avatarUrl      String?             @map("avatar_url")
+  username       String              @default("New User")
+  level          Int                 @default(1)
+  levelExperience Int                @default(0) @map("level_experience")
+  totalExperience Int                @default(0) @map("total_experience")
+  averageGuessTime Float             @default(0.0) @map("average_guess_time")
+  totalGames     Int                 @default(0) @map("total_games")
+  correctGuesses Int                 @default(0) @map("correct_guesses")
+  gamesWon       Int                 @default(0) @map("games_won")
+  hostedSessions GameSession[]
   gameSessions   GameSessionPlayer[]
+  savedPlaylists UserPlaylist[]      @relation("SavedPlaylists")
+  achievements   Achievement[]
 }
+
+model Achievement {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  type        String
+  name        String
+  description String
+  icon        String?
+  unlockedAt  DateTime @default(now()) @map("unlocked_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/* MUSIC LIBRARY */
 
 model Song {
   id           String         @id @default(uuid())
@@ -80,6 +105,8 @@ model UserPlaylist {
   @@id([userId, playlistId])
 }
 
+/* GAME SESSION */
+
 enum GameStatus {
   WAITING
   ACTIVE
@@ -87,28 +114,28 @@ enum GameStatus {
 }
 
 model GameSession {
-  id            String          @id @default(uuid())
-  userId        String?         @map("user_id")
-  playlistId    String          @map("playlist_id")
-  code          String          @unique
-  status        GameStatus      @default(WAITING)
-  startedAt     DateTime        @default(now()) @map("started_at")
-  endedAt       DateTime?       @map("ended_at")
-  playlist      Playlist        @relation(fields: [playlistId], references: [id], onDelete: Cascade)
-  user          User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  players       GameSessionPlayer[]
+  id         String              @id @default(uuid())
+  userId     String?             @map("user_id")
+  playlistId String              @map("playlist_id")
+  code       String              @unique
+  status     GameStatus          @default(WAITING)
+  startedAt  DateTime            @default(now()) @map("started_at")
+  endedAt    DateTime?           @map("ended_at")
+  playlist   Playlist            @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  user       User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  players    GameSessionPlayer[]
 }
 
 model GameSessionPlayer {
-  id            String      @id @default(uuid())
-  sessionId     String      @map("session_id")
-  userId        String?     @map("user_id")
-  nickname      String
-  score         Int         @default(0)
-  correct       Int         @default(0)
-  totalGuesses  Int         @default(0) @map("total_guesses")
-  gameSession   GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  user          User?       @relation(fields: [userId], references: [id])
+  id           String      @id @default(uuid())
+  sessionId    String      @map("session_id")
+  userId       String?     @map("user_id")
+  nickname     String
+  score        Int         @default(0)
+  correct      Int         @default(0)
+  totalGuesses Int         @default(0) @map("total_guesses")
+  gameSession  GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user         User?       @relation(fields: [userId], references: [id])
 
   @@index([sessionId])
 }

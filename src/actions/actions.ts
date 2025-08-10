@@ -6,7 +6,7 @@ type Float = number;
 
 interface NewData {
   totalPoints?: Integer;
-  averageTime?: Float;
+  averageGuessTime?: Float;
   totalGames?: Integer;
   correctGuesses?: Integer;
   gamesWon?: Integer;
@@ -17,8 +17,8 @@ export async function UpdateStat(id: string, newdata: NewData) {
   if (newdata.totalPoints !== undefined) {
     updateData.totalPoints = newdata.totalPoints;
   }
-  if (newdata.averageTime !== undefined) {
-    updateData.averageTime = newdata.averageTime;
+  if (newdata.averageGuessTime !== undefined) {
+    updateData.averageGuessTime = newdata.averageGuessTime;
   }
   if (newdata.totalGames !== undefined) {
     updateData.totalGames = newdata.totalGames;

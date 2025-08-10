@@ -8,6 +8,7 @@ import ScrollingBackground from "@/components/background/ScrollingBackground";
 import { Canvas } from "@react-three/fiber";
 import FlatRecord from "@/components/3d/FlatRecord";
 import useGameStore from "@/stores/gameStore";
+import { SignInButton } from "@/components/auth/SignInButton";
 
 export default function MenuScreen() {
   const [selectedOption, setSelectedOption] = useState<string>("Start Game");
@@ -81,6 +82,11 @@ export default function MenuScreen() {
   return (
     <div className="min-h-screen flex">
       <ScrollingBackground />
+      {/* Auth Button - Top Right */}
+      <div className="absolute top-4 right-4 z-10">
+        <SignInButton />
+      </div>
+
       <div className="w-full h-full px-4 py-8 flex flex-row items-center justify-center">
         <div className="w-1/2">
           <Menu options={menuOptions} onConfirm={handleConfirm} />

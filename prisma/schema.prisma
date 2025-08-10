@@ -29,6 +29,7 @@ model User {
   hostedSessions   GameSession[]
   gameSessions     GameSessionPlayer[]
   savedPlaylists   UserPlaylist[]      @relation("SavedPlaylists")
+  tutorialComplete Boolean             @default(false) @map("tutorial_complete")
   achievements     Achievement[]
 }
 

@@ -66,11 +66,14 @@ export async function ensureUserExists(clerkId: string): Promise<User | null> {
 
 export async function createOrUpdateUser(clerkUser: ClerkUser): Promise<User> {
   try {
+    console.log("createOrUpdateUser called with:", clerkUser);
+
     const existingUser = await prisma.user.findUnique({
       where: { clerkId: clerkUser.id },
     });
 
     if (existingUser) {
+      console.log("Updating existing user:", existingUser.id);
       // Update existing user
       return await prisma.user.update({
         where: { clerkId: clerkUser.id },
@@ -83,13 +86,17 @@ export async function createOrUpdateUser(clerkUser: ClerkUser): Promise<User> {
         },
       });
     } else {
+      console.log("Creating new user with clerkId:", clerkUser.id);
       // Create new user
       const email = clerkUser.emailAddresses[0]?.emailAddress;
       if (!email) {
+        console.error("No email provided for user creation:", clerkUser);
         throw new Error("Email is required to create a user");
       }
 
-      return await prisma.user.create({
+      console.log("Creating user with email:", email);
+
+      const newUser = await prisma.user.create({
         data: {
           clerkId: clerkUser.id,
           username: clerkUser.username || "New User",
@@ -107,9 +114,13 @@ export async function createOrUpdateUser(clerkUser: ClerkUser): Promise<User> {
           tutorialComplete: false,
         },
       });
+
+      console.log("User created successfully:", newUser.id);
+      return newUser;
     }
   } catch (error) {
     console.error("Error in createOrUpdateUser:", error);
+    console.error("User data that caused error:", clerkUser);
     throw error;
   }
 }

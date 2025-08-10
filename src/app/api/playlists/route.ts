@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import type { Playlist, PlaylistSong, Song } from "@prisma/client";
 
 // get all playlists
 export async function GET() {
@@ -15,9 +16,9 @@ export async function GET() {
     });
 
     // Transform the response to return songs directly
-    const transformedPlaylists = playlists.map((playlist) => ({
+    const transformedPlaylists = playlists.map((playlist: Playlist & { songs: (PlaylistSong & { song: Song })[] }) => ({
       ...playlist,
-      songs: playlist.songs.map((ps) => ps.song),
+      songs: playlist.songs.map((ps: PlaylistSong & { song: Song }) => ps.song),
     }));
 
     return NextResponse.json(transformedPlaylists);

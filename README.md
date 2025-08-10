@@ -4,13 +4,14 @@
 
 **Playtime** is a web-based multiplayer game where players compete asynchronously to guess song titles as quickly as possible. The game features interactive 3D visuals, a cumulative leaderboard, and the ability to create and share custom playlists. It integrates with the SoundCloud API to fetch and play songs.
 
-This originally began as a class project for Software Design Lab, and I thought it would be fun to continue it as an independent project. So here you go! 
+This originally began as a class project for Software Design Lab, and I thought it would be fun to continue it as an independent project. So here you go!
 
 ---
 
 ## Features
 
 ### Core Features
+
 1. **Guess the Song**: Players listen to short audio clips and guess the song title. They are awarded more points for guessing faster and the first person to guess correctly wins the points.
 2. **Leaderboard**: Tracks player performance, including total points, average time, and games won.
 3. **Playlists**: Players have a large selection of songs and playlists created by admin.
@@ -19,6 +20,7 @@ This originally began as a class project for Software Design Lab, and I thought 
 6. **Statistics**: Players can view past game statistics and achievements.
 
 ### Additional Features
+
 - **Dynamic Difficulty**: Adjust game difficulty and round settings.
 - **Social Sharing**: Invite friends to play via shareable links.
 - **Responsive Design**: Optimized for desktop and mobile devices.
@@ -28,12 +30,14 @@ This originally began as a class project for Software Design Lab, and I thought 
 ## Tech Stack
 
 ### **Frontend**
+
 - **Framework**: React.js with TypeScript
 - **Styling**: TailwindCSS
 - **3D Visuals**: Three.js with React Three Fiber and Drei
 - **UI Components**: Radix UI, Phosphor Icons
 
 ### **Backend**
+
 - **Framework**: Node.js with Next.js
 - **Authentication**: JSON Web Tokens (JWT)
 - **API Integration**: SoundCloud API
@@ -41,6 +45,7 @@ This originally began as a class project for Software Design Lab, and I thought 
 - **ORM**: Prisma
 
 ### **Database**
+
 - **Database**: PostgreSQL
 - **Schema Management**: Prisma ORM
 
@@ -51,23 +56,23 @@ This originally began as a class project for Software Design Lab, and I thought 
 ### Directory Layout
 
 ```
-cs222/ 
-├── prisma/ # Prisma schema and seed files 
-├── public/ # Static assets 
-├── src/ 
-│ ├── app/ # Next.js app directory 
-│ │ ├── api/ # API routes 
-│ │ ├── components/ # React components 
-│ │ ├── lib/ # Utility libraries and helpers 
-│ │ ├── scripts/ # Scripts for database and track management 
-│ │ ├── types/ # TypeScript type definitions 
-│ │ ├── globals.css # Global CSS styles 
-│ │ ├── layout.tsx # Root layout 
-│ │ └── page.tsx # Main page 
-├── .github/ # GitHub workflows and templates 
-├── .gitignore # Git ignore rules 
-├── package.json # Project dependencies and scripts 
-├── tsconfig.json # TypeScript configuration 
+cs222/
+├── prisma/ # Prisma schema and seed files
+├── public/ # Static assets
+├── src/
+│ ├── app/ # Next.js app directory
+│ │ ├── api/ # API routes
+│ │ ├── components/ # React components
+│ │ ├── lib/ # Utility libraries and helpers
+│ │ ├── scripts/ # Scripts for database and track management
+│ │ ├── types/ # TypeScript type definitions
+│ │ ├── globals.css # Global CSS styles
+│ │ ├── layout.tsx # Root layout
+│ │ └── page.tsx # Main page
+├── .github/ # GitHub workflows and templates
+├── .gitignore # Git ignore rules
+├── package.json # Project dependencies and scripts
+├── tsconfig.json # TypeScript configuration
 └── README.md # Project documentation
 ```
 
@@ -76,6 +81,7 @@ cs222/
 ## Key Components
 
 ### **Frontend Components**
+
 1. **3D Visuals**
    - `CanvasWrapper`: Sets up the Three.js canvas.
    - `TitleScene`: Combines 3D elements like the title, music notes, and record.
@@ -93,6 +99,7 @@ cs222/
    - `DevPage`: Development page for testing the game logic.
 
 ### **Backend API**
+
 1. **SoundCloud API Integration**
    - `/api/soundcloud/search`: Fetches tracks from SoundCloud based on a query.
    - `/api/soundcloud`: Handles track search and retrieval.
@@ -109,7 +116,9 @@ cs222/
 ## Database Schema
 
 ### **User**
+
 Tracks player statistics and playlists.
+
 ```prisma
 model User {
   id             String     @id @default(uuid())
@@ -124,6 +133,7 @@ model User {
 ```
 
 ### **Playlist**
+
 Stores playlists created by users.
 
 ```prisma
@@ -139,6 +149,7 @@ model Playlist {
 ```
 
 ### **Song**
+
 Represents individual songs.
 
 ```prisma
@@ -163,10 +174,12 @@ model Song {
 ## Scripts
 
 ### **Database Management**
+
 - **`prisma`**: Pulls the database schema and generates the Prisma client.
 - **`build-db`**: Populates the database with tracks from SoundCloud.
 
 ### **Development**
+
 - **`dev`**: Starts the Next.js development server.
 - **`lint`**: Runs ESLint to check for code quality issues.
 - **`format`**: Formats the codebase using Prettier.
@@ -176,11 +189,13 @@ model Song {
 ## Environment Variables
 
 ### **Required Variables**
+
 - **`SOUNDCLOUD_CLIENT_ID`**: SoundCloud API client ID.
 - **`SOUNDCLOUD_CLIENT_SECRET`**: SoundCloud API client secret.
 - **`DATABASE_URL`**: PostgreSQL database connection string.
 
 ### **Optional Variables**
+
 - **`DIRECT_URL`**: Direct database connection URL for Prisma.
 
 ---
@@ -188,45 +203,62 @@ model Song {
 ## Deployment
 
 ### **Local Development**
+
 1. Clone the repository:
+
 ```bash
    git clone <repository-url>
    cd cs222
-   ```
-
+```
 
 2. Set up environment variables in .env.local.
+
 ```bash
   .env.local
 ```
 
-3. Start the development server:
+3. Install dependencies:
+
 ```bash
-  npm run dev
+  pnpm install
+```
+
+4. Start the development server:
+
+```bash
+  pnpm run dev
 ```
 
 ### **Production**
+
 1. Build the project:
+
 ```bash
-  npm run build
+  pnpm run build
 ```
 
 2. Start the production server:
+
 ```bash
-  npm run start
+  pnpm run start
 ```
+
 ## Testing
 
 ### **Linting**
+
 Run ESLint to check for code quality issues:
+
 ```bash
-npm run lint
+pnpm run lint
 ```
 
 ### **Formatting**
+
 Check code formatting with Prettier:
+
 ```bash
-npm run format:check
+pnpm run format:check
 ```
 
 ## Unit Tests
@@ -235,4 +267,4 @@ Add unit tests using Jest and React Testing Library to ensure the functionality 
 
 ## License
 
-This project is licensed under the MIT License. 
+This project is licensed under the MIT License.

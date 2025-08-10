@@ -11,8 +11,8 @@
     "check": "next lint && tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "format:check": "prettier --check src",
-    "build-db": "npx tsx src/scripts/build-db.ts",
-    "prisma": "npx prisma db pull && npx prisma generate"
+    "build-db": "pnpm exec tsx src/scripts/build-db.ts",
+    "prisma": "pnpm exec prisma db pull && pnpm exec prisma generate"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.9.0",

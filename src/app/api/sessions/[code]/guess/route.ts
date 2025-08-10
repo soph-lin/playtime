@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { broadcastUpdate, PusherEvent } from "@/lib/pusher";
+import type { GameSessionPlayer } from "@prisma/client";
 
 export async function POST(req: NextRequest) {
   try {
@@ -48,7 +49,10 @@ export async function POST(req: NextRequest) {
 
     // Check if all songs have been played
     const totalSongs = session.playlist?.songs.length || 0;
-    const totalGuesses = session.players.reduce((sum, player) => sum + player.totalGuesses, 0);
+    const totalGuesses = session.players.reduce(
+      (sum: number, player: GameSessionPlayer) => sum + player.totalGuesses,
+      0
+    );
 
     // If all songs have been played, mark the game as completed
     if (totalGuesses >= totalSongs) {
@@ -64,7 +68,7 @@ export async function POST(req: NextRequest) {
       broadcastUpdate(`session-${session.id}`, {
         type: "roundUpdate",
         data: {
-          players: updatedSession.players.map((p) => ({
+          players: updatedSession.players.map((p: GameSessionPlayer) => ({
             id: p.id,
             nickname: p.nickname,
             score: p.score,
@@ -78,7 +82,7 @@ export async function POST(req: NextRequest) {
       type: "scoreUpdate",
       data: {
         playerId,
-        score: updatedSession.players.find((p) => p.id === playerId)?.score || 0,
+        score: updatedSession.players.find((p: GameSessionPlayer) => p.id === playerId)?.score || 0,
       },
     } as PusherEvent);
 

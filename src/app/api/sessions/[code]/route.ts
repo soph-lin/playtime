@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import type { PlaylistSong, Song } from "@prisma/client";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   try {
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       playlist: gameSession.playlist
         ? {
             ...gameSession.playlist,
-            songs: gameSession.playlist.songs.map((ps) => ps.song),
+            songs: gameSession.playlist.songs.map((ps: PlaylistSong & { song: Song }) => ps.song),
           }
         : null,
     };
@@ -85,7 +86,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       playlist: gameSession.playlist
         ? {
             ...gameSession.playlist,
-            songs: gameSession.playlist.songs.map((ps) => ps.song),
+            songs: gameSession.playlist.songs.map((ps: PlaylistSong & { song: Song }) => ps.song),
           }
         : null,
     };

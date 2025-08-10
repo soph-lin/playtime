@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { broadcastUpdate, PusherEvent } from "@/lib/pusher";
+import type { GameSessionPlayer } from "@prisma/client";
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get the leaving player's nickname
-    const leavingPlayer = session.players.find((p) => p.id === playerId);
+    const leavingPlayer = session.players.find((p: GameSessionPlayer) => p.id === playerId);
     if (!leavingPlayer) {
       return NextResponse.json({ error: "Player not found" }, { status: 404 });
     }

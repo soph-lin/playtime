@@ -131,6 +131,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
     if (e.key === "Enter") {
       handleUsernameSave();
     } else if (e.key === "Escape") {

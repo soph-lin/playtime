@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Play, Pause, Plus, MusicNote, SkipForward, SpinnerGap } from "@phosphor-icons/react";
 import RippleText from "../effects/RippleText";
-import ProgressBar from "../player/ProgressBar";
+import ProgressBar from "../music-player/ProgressBar";
 import { toast } from "react-hot-toast";
 import { Tooltip } from "../ui/Tooltip";
 import { SoundCloudWidget } from "@/types/soundcloud";

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Song } from "@prisma/client";
 import { SoundCloudWidget } from "@/types/soundcloud";
-import SoundCloudPlayer from "../player/SoundCloudPlayer";
+import SoundCloudPlayer from "../music-player/SoundCloudPlayer";
 
 interface GameSongItemProps {
   song: Song;

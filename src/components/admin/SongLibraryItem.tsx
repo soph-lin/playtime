@@ -4,7 +4,7 @@ import { SoundCloudTrack } from "@/app/api/soundcloud/types";
 import SoundCloudTrackDropdown from "./SoundCloudTrackDropdown";
 import EditSongFieldsModal from "./EditSongFieldsModal";
 import { Song } from "@prisma/client";
-import SoundCloudPlayer from "../player/SoundCloudPlayer";
+import SoundCloudPlayer from "../music-player/SoundCloudPlayer";
 import LoadingSpinner from "../effects/LoadingSpinner";
 import { SoundCloudWidget } from "@/types/soundcloud";
 

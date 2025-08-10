@@ -2,9 +2,9 @@
 
 import { useUser, SignInButton as ClerkSignInButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/Button";
-import { ArrowRightIcon } from "@phosphor-icons/react";
 import LoadingSpinner from "../effects/LoadingSpinner";
 import { UserProfileButton } from "./UserProfileButton";
+import { SignInIcon } from "@phosphor-icons/react";
 
 export function SignInButton() {
   const { user, isLoaded } = useUser();
@@ -17,7 +17,7 @@ export function SignInButton() {
     <LoadingSpinner />
   ) : (
     <>
-      Sign In <ArrowRightIcon className="w-7 h-7" />
+      <SignInIcon className="w-7 h-7" /> Sign In
     </>
   );
 

@@ -24,7 +24,6 @@ model User {
   totalExperience  Int                 @default(0) @map("total_experience")
   averageGuessTime Float               @default(0.0) @map("average_guess_time")
   totalGames       Int                 @default(0) @map("total_games")
-  correctGuesses   Int                 @default(0) @map("correct_guesses")
   gamesWon         Int                 @default(0) @map("games_won")
   hostedSessions   GameSession[]
   gameSessions     GameSessionPlayer[]

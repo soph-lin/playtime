@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
+import { useUser, SignOutButton } from "@clerk/nextjs";
 import { SignInButton } from "@/components/auth/SignInButton";
 import Link from "next/link";
 
@@ -72,6 +72,12 @@ export default function DemoPage() {
                     View Profile
                   </button>
                 </Link>
+
+                <SignOutButton>
+                  <button className="bg-red-600/20 hover:bg-red-600/30 text-red-400 px-6 py-3 rounded-lg font-semibold transition-all duration-200 border border-red-400/30">
+                    Sign Out
+                  </button>
+                </SignOutButton>
               </div>
             </div>
 

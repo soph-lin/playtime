@@ -1,29 +1,16 @@
 "use client";
 
-import { useUser, SignInButton as ClerkSignInButton, SignOutButton } from "@clerk/nextjs";
+import { useUser, SignInButton as ClerkSignInButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/Button";
-import Link from "next/link";
 import { ArrowRightIcon } from "@phosphor-icons/react";
 import LoadingSpinner from "../effects/LoadingSpinner";
+import { UserProfileButton } from "./UserProfileButton";
 
 export function SignInButton() {
   const { user, isLoaded } = useUser();
 
   if (user) {
-    return (
-      <div className="flex items-center space-x-4">
-        <Link href="/profile">
-          <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
-            Profile
-          </Button>
-        </Link>
-        <SignOutButton>
-          <Button variant="outline" className="border-red-500/20 text-red-400 hover:bg-red-500/20">
-            Sign Out
-          </Button>
-        </SignOutButton>
-      </div>
-    );
+    return <UserProfileButton />;
   }
 
   const buttonContent = !isLoaded ? (

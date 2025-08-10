@@ -1,8 +1,11 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
+import { useUser, SignOutButton } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { User } from "@prisma/client";
+import { Button } from "@/components/ui/Button";
+import Link from "next/link";
+import { ArrowLeftIcon } from "@phosphor-icons/react";
 
 interface Achievement {
   id: string;
@@ -73,21 +76,36 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-4">Player Profile</h1>
-          <div className="flex items-center justify-center space-x-4">
-            {userData.avatarUrl && (
-              <img src={userData.avatarUrl} alt="Profile" className="w-20 h-20 rounded-full border-4 border-white" />
-            )}
-            <div className="text-left">
-              <h2 className="text-2xl font-semibold text-white">
-                {userData.firstName && userData.lastName
-                  ? `${userData.firstName} ${userData.lastName}`
-                  : userData.username}
-              </h2>
-              <p className="text-gray-300">{userData.email}</p>
+        <div className="flex items-center justify-between mb-8">
+          <Link href="/">
+            <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
+              <ArrowLeftIcon className="w-4 h-4 mr-2" />
+              Back to Menu
+            </Button>
+          </Link>
+
+          <div className="text-center flex-1">
+            <h1 className="text-4xl font-bold text-white mb-4">Player Profile</h1>
+            <div className="flex items-center justify-center space-x-4">
+              {userData.avatarUrl && (
+                <img src={userData.avatarUrl} alt="Profile" className="w-20 h-20 rounded-full border-4 border-white" />
+              )}
+              <div className="text-left">
+                <h2 className="text-2xl font-semibold text-white">
+                  {userData.firstName && userData.lastName
+                    ? `${userData.firstName} ${userData.lastName}`
+                    : userData.username}
+                </h2>
+                <p className="text-gray-300">{userData.email}</p>
+              </div>
             </div>
           </div>
+
+          <SignOutButton>
+            <Button variant="outline" className="border-red-500/20 text-red-400 hover:bg-red-500/20">
+              Sign Out
+            </Button>
+          </SignOutButton>
         </div>
 
         {/* Stats Grid */}

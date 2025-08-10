@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
   console.log(`Webhook with and ID of ${id} and type of ${eventType}`);
   console.log("Webhook body:", body);
 
+  // Handle various Clerk events
   if (eventType === "user.created" || eventType === "user.updated") {
     try {
       // Transform webhook data to match ClerkUser interface
@@ -87,6 +88,34 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       console.error("Error syncing user:", error);
       return NextResponse.json({ error: "Error syncing user" }, { status: 500 });
+    }
+  }
+
+  // Handle email verification events
+  if (eventType === "email.created" || eventType === "email.updated") {
+    try {
+      // Get the user ID from the email event
+      const userId = evt.data.id;
+      if (userId) {
+        // Re-sync user data to ensure email is updated
+        const clerkUser = {
+          id: userId,
+          username: evt.data.username,
+          emailAddresses:
+            evt.data.email_addresses?.map((email: { email_address: string }) => ({
+              emailAddress: email.email_address,
+            })) || [],
+          firstName: evt.data.first_name,
+          lastName: evt.data.last_name,
+          imageUrl: evt.data.image_url,
+        };
+
+        const user = await createOrUpdateUser(clerkUser);
+        console.log("User email updated:", user.id);
+      }
+    } catch (error) {
+      console.error("Error updating user email:", error);
+      // Don't fail the webhook for email update errors
     }
   }
 

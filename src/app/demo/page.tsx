@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser, SignOutButton } from "@clerk/nextjs";
-import { SignInButton } from "@/components/auth/SignInButton";
+import { SignInButton } from "@/components/profile/SignInButton";
 import Link from "next/link";
 
 export default function DemoPage() {
@@ -64,12 +64,6 @@ export default function DemoPage() {
                 <Link href="/">
                   <button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200">
                     Go to Menu
-                  </button>
-                </Link>
-
-                <Link href="/profile">
-                  <button className="bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200 border border-white/30">
-                    View Profile
                   </button>
                 </Link>
 

@@ -37,12 +37,12 @@ export function useUserSync() {
           const errorMessage = error instanceof Error ? error.message : "Unknown error";
           console.error("Error syncing user data:", errorMessage);
           setLastSyncError(errorMessage);
-          
+
           // Retry logic - retry up to 3 times with exponential backoff
           if (syncAttempts < 3) {
             const delay = Math.pow(2, syncAttempts) * 1000; // 1s, 2s, 4s
             setTimeout(() => {
-              setSyncAttempts(prev => prev + 1);
+              setSyncAttempts((prev) => prev + 1);
             }, delay);
           }
         }
@@ -52,11 +52,11 @@ export function useUserSync() {
     }
   }, [user, isLoaded, syncAttempts]);
 
-  return { 
-    user, 
-    isLoaded, 
-    syncAttempts, 
+  return {
+    user,
+    isLoaded,
+    syncAttempts,
     lastSyncError,
-    isSyncing: syncAttempts > 0 && lastSyncError !== null
+    isSyncing: syncAttempts > 0 && lastSyncError !== null,
   };
-} 
+}

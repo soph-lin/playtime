@@ -8,7 +8,7 @@ import ScrollingBackground from "@/components/background/ScrollingBackground";
 import { Canvas } from "@react-three/fiber";
 import FlatRecord from "@/components/3d/FlatRecord";
 import useGameStore from "@/stores/gameStore";
-import { SignInButton } from "@/components/auth/SignInButton";
+import { SignInButton } from "@/components/profile/SignInButton";
 
 export default function MenuScreen() {
   const [selectedOption, setSelectedOption] = useState<string>("Start Game");

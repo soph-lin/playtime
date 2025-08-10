@@ -9,13 +9,19 @@ import { Canvas } from "@react-three/fiber";
 import FlatRecord from "@/components/3d/FlatRecord";
 import useGameStore from "@/stores/gameStore";
 import { SignInButton } from "@/components/profile/SignInButton";
+import { useUser, useClerk } from "@clerk/nextjs";
 
 export default function MenuScreen() {
+  const { user, isLoaded } = useUser();
+  const { signOut } = useClerk();
   const [selectedOption, setSelectedOption] = useState<string>("Start Game");
   const [showSidePanel, setShowSidePanel] = useState<boolean>(false);
   const [showStartGameModal, setShowStartGameModal] = useState<boolean>(false);
   const setScreen = useGameStore((state) => state.setScreen);
-  const menuOptions = ["Start Game", "Leaderboard", "How to Play", "Settings"];
+
+  // Create menu options based on authentication status
+  const baseMenuOptions = ["Start Game", "Leaderboard", "How to Play", "Settings"];
+  const menuOptions = isLoaded && user ? [...baseMenuOptions, "Sign Out"] : baseMenuOptions;
 
   const getContentForOption = (option: string) => {
     switch (option) {
@@ -74,6 +80,10 @@ export default function MenuScreen() {
       setShowStartGameModal(true);
     } else if (option === "Leaderboard") {
       setScreen("leaderboard");
+    } else if (option === "Sign Out") {
+      // Automatically sign out the user
+      signOut();
+      return;
     } else {
       setShowSidePanel(true);
     }

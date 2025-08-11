@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { DialogueBox } from "@/components/dialogue/DialogueBox";
+import DialogueStage from "@/components/dialogue/DialogueStage";
 import "@/components/dialogue/dialogue-animations.css";
 
 export default function DialogueEditorPage() {
@@ -123,8 +123,8 @@ export default function DialogueEditorPage() {
         </div>
       </div>
 
-      {/* Dialogue Box */}
-      <DialogueBox
+      {/* Dialogue Stage */}
+      <DialogueStage
         isOpen={isDialogueOpen}
         onClose={() => setIsDialogueOpen(false)}
         character={{

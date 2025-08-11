@@ -1,27 +1,24 @@
-interface BluesProps {
-  outline?: string;
-  fill?: string;
-  highlight?: string;
-  blush?: string;
-}
+import { CharacterAssetProps, DEFAULT_ASSET_SIZE } from "@/types/assets";
+import { useAssetProps } from "@/hooks/useAssetProps";
 
-const defaultProps: BluesProps = {
+const defaultProps: Required<CharacterAssetProps> = {
   outline: "#0075c4",
   fill: "#85ceff",
   highlight: "#47b6ff",
   blush: "#fd8d9e",
+  size: DEFAULT_ASSET_SIZE,
 };
 
-export default function Blues(props: BluesProps) {
-  const { outline, fill, highlight, blush } = { ...defaultProps, ...props };
+export default function Blues(props: CharacterAssetProps) {
+  const { outline, fill, highlight, blush, finalSize } = useAssetProps(props, defaultProps);
 
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       version="1.1"
-      width="512px"
-      height="512px"
-      transform="rotate(0) scale(1, 1)"
+      width={`${finalSize}px`}
+      height={`${finalSize}px`}
+      viewBox="0 0 512 512"
     >
       <g>
         <path

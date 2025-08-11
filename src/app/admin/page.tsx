@@ -9,7 +9,6 @@ import CreatePlaylistModal from "@/components/playlist/CreatePlaylistModal";
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<"upload" | "review" | "library" | "playlists">("upload");
-  const [uploadType, setUploadType] = useState<"playlist" | "track">("playlist");
   const [isCreatePlaylistModalOpen, setIsCreatePlaylistModalOpen] = useState(false);
   const [playlistRefreshKey, setPlaylistRefreshKey] = useState(0);
   const [playlistSearchQuery, setPlaylistSearchQuery] = useState("");
@@ -59,25 +58,7 @@ export default function AdminPage() {
 
       {activeTab === "upload" ? (
         <div className="space-y-8">
-          <div className="flex space-x-4 mb-6">
-            <button
-              onClick={() => setUploadType("playlist")}
-              className={`px-4 py-2 rounded cursor-pointer ${
-                uploadType === "playlist" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"
-              }`}
-            >
-              Upload Playlist
-            </button>
-            <button
-              onClick={() => setUploadType("track")}
-              className={`px-4 py-2 rounded cursor-pointer ${
-                uploadType === "track" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"
-              }`}
-            >
-              Upload Track
-            </button>
-          </div>
-          <Upload type={uploadType} service="spotify" />
+          <Upload service="spotify" />
         </div>
       ) : activeTab === "review" ? (
         <SongReview />

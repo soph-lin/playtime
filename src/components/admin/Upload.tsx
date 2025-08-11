@@ -6,20 +6,15 @@ import { UploadResponse } from "@/services/upload/types";
 import { cn } from "@/lib/utils";
 
 interface UploadProps {
-  type: "track" | "playlist";
-  service: "spotify" | "soundcloud";
+  service: "spotify";
 }
 
-export default function Upload({ type, service }: UploadProps) {
-  const [trackUrl, setTrackUrl] = useState("");
-  const [playlistUrl, setPlaylistUrl] = useState("");
+export default function Upload({ service }: UploadProps) {
+  const [url, setUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [visibleHistory, setVisibleHistory] = useState<HistoryEntry[]>([]);
-
-  const currentUrl = type === "track" ? trackUrl : playlistUrl;
-  const setCurrentUrl = type === "track" ? setTrackUrl : setPlaylistUrl;
 
   // Add effect to handle sequential animations
   useEffect(() => {
@@ -31,10 +26,20 @@ export default function Upload({ type, service }: UploadProps) {
     }
   }, [history, visibleHistory]);
 
+  // Detect if URL is a track, playlist, or album
+  const detectUrlType = (url: string): "track" | "playlist" | "album" => {
+    if (url.includes("/playlist/")) return "playlist";
+    if (url.includes("/album/")) return "album";
+    if (url.includes("/track/")) return "track";
+    // Default to track if we can't determine
+    return "track";
+  };
+
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUrl) return;
+    if (!url) return;
 
+    const urlType = detectUrlType(url);
     setIsUploading(true);
     setHistory([]);
     setVisibleHistory([]);
@@ -46,8 +51,13 @@ export default function Upload({ type, service }: UploadProps) {
         id: `initial-${Date.now()}`,
         title: "Upload Started",
         artist: "",
-        status: type === "track" ? "uploading_track" : "uploading_playlist",
-        message: type === "track" ? "Uploading track..." : "Uploading playlist...",
+        status: urlType === "track" ? "uploading_track" : "uploading_playlist",
+        message:
+          urlType === "track"
+            ? "Uploading track..."
+            : urlType === "playlist"
+              ? "Uploading playlist..."
+              : "Uploading album...",
         error: undefined,
         timestamp: new Date().toISOString(),
       } as HistoryEntry,
@@ -63,9 +73,9 @@ export default function Upload({ type, service }: UploadProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          url: currentUrl,
-          type,
-          service: "spotify",
+          url,
+          type: urlType,
+          service,
         }),
         signal: controller.signal,
       });
@@ -91,7 +101,7 @@ export default function Upload({ type, service }: UploadProps) {
         const data = JSON.parse(chunk) as UploadResponse;
 
         // Update playlist information if available
-        if (type === "playlist") {
+        if (urlType === "playlist" || urlType === "album") {
           if (data.playlistName) {
             playlistName = data.playlistName;
             totalSongs = data.progress.total;
@@ -117,7 +127,7 @@ export default function Upload({ type, service }: UploadProps) {
                   ? "song_failed"
                   : song.status === "already_added"
                     ? "already_added"
-                    : type === "track"
+                    : urlType === "track"
                       ? "uploading_track"
                       : "uploading_playlist";
 
@@ -128,9 +138,11 @@ export default function Upload({ type, service }: UploadProps) {
                   ? `Failed to add '${song.title}' by ${song.artist}`
                   : song.status === "already_added"
                     ? `'${song.title}' by ${song.artist} already exists`
-                    : type === "track"
+                    : urlType === "track"
                       ? `Uploading track '${song.title}' by ${song.artist}...`
-                      : `Uploading playlist track '${song.title}' by ${song.artist}...`;
+                      : urlType === "playlist"
+                        ? `Uploading playlist track '${song.title}' by ${song.artist}...`
+                        : `Uploading album track '${song.title}' by ${song.artist}...`;
 
             return {
               id: `${song.id}-${timestamp}`,
@@ -147,13 +159,15 @@ export default function Upload({ type, service }: UploadProps) {
 
       // Update initial message with final counts and playlist info
       let finalMessage: string;
-      if (type === "track") {
+      if (urlType === "track") {
         finalMessage = "Uploaded track";
       } else {
         if (playlistCreated) {
-          finalMessage = `Created playlist "${playlistName}" with ${uploadedSongs}/${totalSongs} songs`;
+          const contentType = urlType === "playlist" ? "playlist" : "album";
+          finalMessage = `Created ${contentType} "${playlistName}" with ${uploadedSongs}/${totalSongs} songs`;
         } else {
-          finalMessage = `Uploaded ${uploadedSongs}/${totalSongs} songs from playlist "${playlistName}"`;
+          const contentType = urlType === "playlist" ? "playlist" : "album";
+          finalMessage = `Uploaded ${uploadedSongs}/${totalSongs} songs from ${contentType} "${playlistName}"`;
         }
       }
 
@@ -240,48 +254,42 @@ export default function Upload({ type, service }: UploadProps) {
   };
 
   const getPlaceholder = () => {
-    if (service === "spotify") {
-      return type === "track" ? "https://open.spotify.com/track/..." : "https://open.spotify.com/playlist/...";
-    }
-    return type === "track" ? "https://soundcloud.com/..." : "https://soundcloud.com/.../sets/...";
+    return "https://open.spotify.com/track/... or https://open.spotify.com/playlist/... or https://open.spotify.com/album/...";
   };
 
   return (
     <div className="flex flex-col min-h-screen">
       <div className="flex-1 pb-24">
         <div className="max-w-2xl mx-auto p-4">
-          <h2 className="text-2xl font-semibold mb-4">
-            Upload {type.charAt(0).toUpperCase() + type.slice(1)} from{" "}
-            {service.charAt(0).toUpperCase() + service.slice(1)}
-          </h2>
+          <h2 className="text-2xl font-semibold mb-4">Upload from Spotify</h2>
 
-          {type === "playlist" && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                This will create a new playlist and add all songs to your library. Songs that already exist will be
-                skipped when downloading, but added to the playlist.
-              </p>
-            </div>
-          )}
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              Paste any Spotify URL and the associated song(s) will be added to the library. For playlists and albums, a
+              new playlist will be created and new songs will be downloaded to the library as well.
+            </p>
+          </div>
 
           <div className="space-y-4">
             <div className="flex items-center space-x-4">
-              <input
-                type="text"
-                value={currentUrl}
-                onChange={(e) => setCurrentUrl(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && currentUrl && !isUploading) {
-                    handleUpload(e);
-                  }
-                }}
-                placeholder={getPlaceholder()}
-                className="flex-1 p-2 rounded shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
-                disabled={isUploading}
-              />
+              <div className="flex-1">
+                <input
+                  type="text"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && url && !isUploading) {
+                      handleUpload(e);
+                    }
+                  }}
+                  placeholder={"https://open.spotify.com/..."}
+                  className="w-full p-2 rounded shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
+                  disabled={isUploading}
+                />
+              </div>
               <button
                 onClick={isUploading ? handleQuit : handleUpload}
-                disabled={!currentUrl}
+                disabled={!url}
                 className={cn(
                   "px-4 py-2 text-white rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                   isUploading ? "bg-red-500 hover:bg-red-600" : "bg-blue-500 hover:bg-blue-600"

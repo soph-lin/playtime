@@ -100,10 +100,16 @@ export async function POST(request: NextRequest) {
     try {
       if (type === "track") {
         tracks = [await spotifyService.uploadTrack(url)];
-      } else {
+      } else if (type === "playlist") {
         const result = await spotifyService.uploadPlaylist(url);
         tracks = result.tracks;
         playlistName = result.playlistName;
+      } else if (type === "album") {
+        const result = await spotifyService.uploadAlbum(url);
+        tracks = result.tracks;
+        playlistName = result.playlistName;
+      } else {
+        throw new Error("Invalid upload type");
       }
     } catch (error) {
       return NextResponse.json({
@@ -130,10 +136,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Create playlist if uploading a playlist
+    // Create playlist if uploading a playlist or album
     let playlistId: string | undefined;
     let playlistCreated = false;
-    if (type === "playlist" && playlistName) {
+    if ((type === "playlist" || type === "album") && playlistName) {
       try {
         const playlist = await prisma.playlist.create({
           data: {
@@ -236,11 +242,13 @@ export async function POST(request: NextRequest) {
     const failedSongs = processedSongs.filter((song) => song.status === "failed");
     const skippedSongs = processedSongs.filter((song) => song.status === "already_added");
 
+    const contentType = type === "playlist" ? "playlist" : type === "album" ? "album" : "track";
+
     return NextResponse.json({
       message: `Successfully imported ${successfulSongs.length} new song${successfulSongs.length > 1 ? "s" : ""}${
         failedSongs.length > 0 ? ` (${failedSongs.length} failed)` : ""
       }${skippedSongs.length > 0 ? ` (${skippedSongs.length} already exist)` : ""}${
-        playlistCreated ? ` and created playlist "${playlistName}"` : ""
+        playlistCreated ? ` and created ${contentType} "${playlistName}"` : ""
       }`,
       songs: processedSongs,
       progress: {

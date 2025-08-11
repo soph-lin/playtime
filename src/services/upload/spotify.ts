@@ -79,6 +79,53 @@ export class SpotifyUploadService implements UploadService {
     };
   }
 
+  async uploadAlbum(url: string): Promise<{ tracks: TrackData[]; playlistName: string }> {
+    const albumId = url.split("/").pop()?.split("?")[0];
+    if (!albumId) {
+      throw new Error("Invalid album URL");
+    }
+
+    const token = await getSpotifyToken();
+
+    // First get album details to get the name
+    const albumResponse = await fetch(`https://api.spotify.com/v1/albums/${albumId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!albumResponse.ok) {
+      const errorData = await albumResponse.json();
+      throw new Error(errorData.error?.message || "Failed to fetch album from Spotify");
+    }
+
+    const albumData = await albumResponse.json();
+    const albumName = albumData.name;
+
+    // Then get the tracks
+    const tracksResponse = await fetch(`https://api.spotify.com/v1/albums/${albumId}/tracks`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!tracksResponse.ok) {
+      const errorData = await tracksResponse.json();
+      throw new Error(errorData.error?.message || "Failed to fetch album tracks from Spotify");
+    }
+
+    const data = await tracksResponse.json();
+    const tracks = data.items.map((item: SpotifyTrackResponse) => ({
+      spotifyId: item.id,
+      title: item.name,
+      artist: item.artists[0].name,
+      album: albumName,
+      coverUrl: albumData.images[0]?.url,
+    }));
+
+    return { tracks, playlistName: albumName };
+  }
+
   async uploadPlaylist(url: string): Promise<{ tracks: TrackData[]; playlistName: string }> {
     const playlistId = url.split("/").pop()?.split("?")[0];
     if (!playlistId) {

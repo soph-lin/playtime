@@ -13,6 +13,7 @@ export interface TrackData {
 export interface UploadService {
   uploadTrack(url: string): Promise<TrackData>;
   uploadPlaylist(url: string): Promise<{ tracks: TrackData[]; playlistName: string }>;
+  uploadAlbum(url: string): Promise<{ tracks: TrackData[]; playlistName: string }>;
 }
 
 export interface UploadResponse {

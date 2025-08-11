@@ -83,7 +83,7 @@ export async function PATCH(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { url, type, service } = await request.json();
+    const { url, type, service, autoApprove = false } = await request.json();
     const signal = request.signal;
 
     if (!url || !type || !service) {
@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
               };
               controller.enqueue(encoder.encode(`data: ${JSON.stringify(processingUpdate)}\n\n`));
 
-              const { song, status, error } = await processTrack(track, 0, signal);
+              const { song, status, error } = await processTrack(track, 0, signal, autoApprove);
 
               const processedSong = {
                 id: song?.id || track.spotifyId,

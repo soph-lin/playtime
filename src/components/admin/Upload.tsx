@@ -12,9 +12,11 @@ interface UploadProps {
 export default function Upload({ service }: UploadProps) {
   const [url, setUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [autoApprove, setAutoApprove] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [visibleHistory, setVisibleHistory] = useState<HistoryEntry[]>([]);
+  const [totalSongsProcessed, setTotalSongsProcessed] = useState(0);
 
   // Add effect to handle sequential animations
   useEffect(() => {
@@ -76,6 +78,7 @@ export default function Upload({ service }: UploadProps) {
           url,
           type: urlType,
           service,
+          autoApprove,
         }),
         signal: controller.signal,
       });
@@ -102,7 +105,10 @@ export default function Upload({ service }: UploadProps) {
 
               switch (data.type) {
                 case "progress":
-                  // Playlist info is available in data but not currently displayed in UI
+                  // Update total songs count for display
+                  if (data.progress) {
+                    setTotalSongsProcessed(data.progress.total);
+                  }
                   break;
 
                 case "processing":
@@ -319,7 +325,21 @@ export default function Upload({ service }: UploadProps) {
               </button>
             </div>
 
-            <UploadHistory entries={visibleHistory} />
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="autoApprove"
+                checked={autoApprove}
+                onChange={(e) => setAutoApprove(e.target.checked)}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                disabled={isUploading}
+              />
+              <label htmlFor="autoApprove" className="text-sm text-gray-700">
+                Auto-approve songs
+              </label>
+            </div>
+
+            <UploadHistory entries={visibleHistory} totalSongsProcessed={totalSongsProcessed} />
           </div>
         </div>
       </div>

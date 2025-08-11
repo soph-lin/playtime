@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ClockCounterClockwise } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
@@ -154,10 +154,12 @@ function UploadHistoryItem({ entry }: UploadHistoryItemProps) {
 
 interface UploadHistoryProps {
   entries: HistoryEntry[];
+  totalSongsProcessed?: number;
 }
 
-export default function UploadHistory({ entries }: UploadHistoryProps) {
+export default function UploadHistory({ entries, totalSongsProcessed }: UploadHistoryProps) {
   const [isOpen, setIsOpen] = useState(true);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Add custom scrollbar styles
   useEffect(() => {
@@ -191,6 +193,13 @@ export default function UploadHistory({ entries }: UploadHistoryProps) {
   const hasProgress = progress && progress.total > 0;
   const progressPercentage = hasProgress ? Math.round((progress.processed / progress.total) * 100) : 0;
 
+  // Auto-scroll to bottom when new entries are added
+  useEffect(() => {
+    if (scrollContainerRef.current && entries.length > 0) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
+  }, [entries.length]);
+
   return (
     <div className="mt-4">
       <button
@@ -209,7 +218,9 @@ export default function UploadHistory({ entries }: UploadHistoryProps) {
           className="transition-all duration-300 ease-in-out"
         />
         <span className="font-medium">History</span>
-        <span className="text-sm text-gray-500">({entries.length})</span>
+        <span className="text-sm text-gray-500">
+          {totalSongsProcessed ? `(${totalSongsProcessed} songs)` : `(${entries.length} items)`}
+        </span>
         {hasProgress && (
           <div className="ml-auto flex items-center space-x-2">
             <span className="text-xs text-gray-600">
@@ -251,6 +262,7 @@ export default function UploadHistory({ entries }: UploadHistoryProps) {
           </div>
         )}
         <div
+          ref={scrollContainerRef}
           className="space-y-2 pt-1 max-h-[600px] overflow-y-auto pr-2 upload-history-scroll"
           style={{
             scrollbarWidth: "thin",

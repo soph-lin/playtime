@@ -11,7 +11,8 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export async function processTrack(
   track: TrackData,
   retryCount = 0,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  autoApprove = false
 ): Promise<{
   song: Song | null;
   status: "success" | "failed" | "already_added";
@@ -68,7 +69,7 @@ export async function processTrack(
         permalinkUrl: soundcloudData.permalinkUrl,
         duration: soundcloudData.duration,
         access: soundcloudData.access || "blocked",
-        status: "pending",
+        status: autoApprove ? "approved" : "pending",
       },
     });
 

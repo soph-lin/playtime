@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { Playlist, Song } from "@prisma/client";
-import { CaretDown, CaretRight } from "@phosphor-icons/react";
+import { CaretDown, CaretRight, Trash } from "@phosphor-icons/react";
 import SongLibraryItem from "./SongLibraryItem";
+import DeletePlaylistModal from "./DeletePlaylistModal";
 
 interface PlaylistWithSongs extends Playlist {
   songs: Song[];
@@ -19,6 +20,9 @@ export default function PlaylistLibrary({ searchQuery = "" }: PlaylistLibraryPro
   const [playlistSongs, setPlaylistSongs] = useState<Record<string, Song[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchPlaylists();
@@ -74,6 +78,42 @@ export default function PlaylistLibrary({ searchQuery = "" }: PlaylistLibraryPro
     playlist.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleDeletePlaylist = async (deleteSongs: boolean) => {
+    if (!selectedPlaylist) return;
+
+    try {
+      setIsDeleting(true);
+      const response = await fetch(`/api/playlists/${selectedPlaylist.id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          deleteSongs,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete playlist");
+      }
+
+      // Refresh the playlists
+      await fetchPlaylists();
+      setDeleteModalOpen(false);
+      setSelectedPlaylist(null);
+    } catch (err) {
+      console.error("Error deleting playlist:", err);
+      alert("Failed to delete playlist. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const openDeleteModal = (playlist: Playlist) => {
+    setSelectedPlaylist(playlist);
+    setDeleteModalOpen(true);
+  };
+
   if (loading) return <div className="text-center">Loading playlists...</div>;
   if (error) return <div className="text-red-500 text-center">{error}</div>;
   if (playlists.length === 0) return <div className="text-center">No playlists found</div>;
@@ -83,11 +123,11 @@ export default function PlaylistLibrary({ searchQuery = "" }: PlaylistLibraryPro
       <h2 className="text-2xl font-semibold mb-4">Playlist Library</h2>
       {filteredPlaylists.map((playlist) => (
         <div key={playlist.id} className="border rounded-lg overflow-hidden">
-          <div
-            className="p-4 bg-gray-50 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-            onClick={() => togglePlaylist(playlist.id)}
-          >
-            <div className="flex items-center space-x-2">
+          <div className="p-4 bg-gray-50 hover:bg-gray-100 flex items-center justify-between">
+            <div
+              className="flex items-center space-x-2 cursor-pointer flex-1"
+              onClick={() => togglePlaylist(playlist.id)}
+            >
               {expandedPlaylists.has(playlist.id) ? (
                 <CaretDown size={20} weight="bold" />
               ) : (
@@ -95,7 +135,19 @@ export default function PlaylistLibrary({ searchQuery = "" }: PlaylistLibraryPro
               )}
               <span className="font-medium">{playlist.name}</span>
             </div>
-            <span className="text-sm text-gray-500">{playlistSongs[playlist.id]?.length || 0} songs</span>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-500">{playlistSongs[playlist.id]?.length || 0} songs</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openDeleteModal(playlist);
+                }}
+                className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors duration-200"
+                title="Delete Playlist"
+              >
+                <Trash size={16} weight="bold" />
+              </button>
+            </div>
           </div>
           <div
             className={`transition-all duration-300 ease-in-out ${
@@ -117,6 +169,18 @@ export default function PlaylistLibrary({ searchQuery = "" }: PlaylistLibraryPro
       {filteredPlaylists.length === 0 && (
         <div className="text-center text-gray-500">No playlists match your search</div>
       )}
+
+      <DeletePlaylistModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setSelectedPlaylist(null);
+        }}
+        onConfirm={handleDeletePlaylist}
+        playlist={selectedPlaylist}
+        isDeleting={isDeleting}
+        songCount={selectedPlaylist ? playlistSongs[selectedPlaylist.id]?.length || 0 : 0}
+      />
     </div>
   );
 }

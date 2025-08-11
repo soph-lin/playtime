@@ -81,6 +81,29 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  try {
+    const { songId } = await request.json();
+
+    if (!songId) {
+      return NextResponse.json({ error: "Song ID is required" }, { status: 400 });
+    }
+
+    // Delete the song
+    await prisma.song.delete({
+      where: { id: songId },
+    });
+
+    return NextResponse.json({ message: "Song deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting song:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to delete song" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { url, type, service, autoApprove = false } = await request.json();

@@ -78,31 +78,76 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ pla
   }
 }
 
-// delete song from playlist
+// delete song from playlist or entire playlist
 export async function DELETE(request: NextRequest, context: { params: Promise<{ playlistId: string }> }) {
   try {
     const { playlistId } = await context.params;
-    const { songId } = await request.json();
+    const body = await request.json();
 
-    if (!playlistId || !songId) {
-      return NextResponse.json({ error: "Missing playlistId or songId" }, { status: 400 });
+    // Check if this is a playlist deletion or song removal
+    if (body.deleteSongs !== undefined) {
+      // This is a playlist deletion
+      const { deleteSongs } = body;
+
+      if (deleteSongs) {
+        // Delete all songs in the playlist first
+        await prisma.playlistSong.deleteMany({
+          where: { playlistId },
+        });
+
+        // Then delete songs that are not used in other playlists
+        const songsToDelete = await prisma.song.findMany({
+          where: {
+            playlists: {
+              none: {}, // Songs not in any playlist
+            },
+          },
+        });
+
+        if (songsToDelete.length > 0) {
+          await prisma.song.deleteMany({
+            where: {
+              id: { in: songsToDelete.map((s) => s.id) },
+            },
+          });
+        }
+      } else {
+        // Just remove playlist-song associations
+        await prisma.playlistSong.deleteMany({
+          where: { playlistId },
+        });
+      }
+
+      // Delete the playlist
+      await prisma.playlist.delete({
+        where: { id: playlistId },
+      });
+
+      return NextResponse.json({ message: "Playlist deleted successfully" });
+    } else {
+      // This is a song removal from playlist
+      const { songId } = body;
+
+      if (!songId) {
+        return NextResponse.json({ error: "Missing songId" }, { status: 400 });
+      }
+
+      const existingEntry = await prisma.playlistSong.findUnique({
+        where: { playlistId_songId: { playlistId: playlistId, songId: songId } },
+      });
+
+      if (!existingEntry) {
+        return NextResponse.json({ error: "Song not found in playlist" }, { status: 400 });
+      }
+
+      await prisma.playlistSong.delete({
+        where: { playlistId_songId: { playlistId: playlistId, songId: songId } },
+      });
+
+      return NextResponse.json({ success: true });
     }
-
-    const existingEntry = await prisma.playlistSong.findUnique({
-      where: { playlistId_songId: { playlistId: playlistId, songId: songId } },
-    });
-
-    if (!existingEntry) {
-      return NextResponse.json({ error: "Song not found in playlist" }, { status: 404 });
-    }
-
-    await prisma.playlistSong.delete({
-      where: { playlistId_songId: { playlistId: playlistId, songId: songId } },
-    });
-
-    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting song from playlist:", error);
-    return NextResponse.json({ error: "Failed to delete song from playlist" }, { status: 500 });
+    console.error("Error deleting from playlist:", error);
+    return NextResponse.json({ error: "Failed to delete from playlist" }, { status: 500 });
   }
 }

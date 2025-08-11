@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Check, X, Pencil } from "@phosphor-icons/react";
+import { Check, X, Pencil, Trash } from "@phosphor-icons/react";
 import { SoundCloudTrack } from "@/app/api/soundcloud/types";
 import SoundCloudTrackDropdown from "./SoundCloudTrackDropdown";
 import EditSongFieldsModal from "./EditSongFieldsModal";
+import DeleteSongModal from "./DeleteSongModal";
 import { Song } from "@prisma/client";
 import SoundCloudPlayer from "../music-player/SoundCloudPlayer";
 import LoadingSpinner from "../effects/LoadingSpinner";
@@ -19,6 +20,8 @@ export default function SongLibrary({ song, editable = false, refreshSongs }: So
   const [isEditingFields, setIsEditingFields] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const soundcloudData = song.soundcloudId
     ? {
         id: song.soundcloudId,
@@ -127,6 +130,34 @@ export default function SongLibrary({ song, editable = false, refreshSongs }: So
     } catch (err) {
       console.error(err instanceof Error ? err.message : "Failed to deny song");
       setIsLoading(false);
+    }
+  };
+
+  const onDelete = async () => {
+    try {
+      setIsDeleting(true);
+      const response = await fetch("/api/songs", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          songId: song.id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete song");
+      }
+
+      setIsComplete(true);
+      // Small delay to allow the fade-out animation to complete
+      setTimeout(() => {
+        refreshSongs();
+      }, 300);
+    } catch (err) {
+      console.error(err instanceof Error ? err.message : "Failed to delete song");
+      setIsDeleting(false);
     }
   };
 
@@ -478,6 +509,13 @@ export default function SongLibrary({ song, editable = false, refreshSongs }: So
                   >
                     <X size={20} weight="bold" />
                   </button>
+                  <button
+                    onClick={() => setIsDeleteModalOpen(true)}
+                    className="p-2 text-white bg-red-600 rounded hover:bg-red-700 cursor-pointer"
+                    title="Delete"
+                  >
+                    <Trash size={20} weight="bold" />
+                  </button>
                 </div>
               </>
             )}
@@ -505,6 +543,14 @@ export default function SongLibrary({ song, editable = false, refreshSongs }: So
           onClose={() => setIsEditingFields(false)}
         />
       )}
+
+      <DeleteSongModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={onDelete}
+        song={song}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }

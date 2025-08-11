@@ -41,7 +41,10 @@ export default function SongLibrary() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="flex justify-end mb-4">
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-lg font-medium text-gray-700">
+          {filteredAndSortedSongs.length} song{filteredAndSortedSongs.length !== 1 ? "s" : ""} found
+        </div>
         <input
           type="text"
           placeholder="Search by title..."

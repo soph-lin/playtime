@@ -37,6 +37,9 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
   useEffect(() => {
     if (isOpen && isLoaded && user) {
+      // Reset animated values when modal opens
+      setAnimatedXP(0);
+      setAnimatedProgress(0);
       fetchUserData();
     }
   }, [isOpen, isLoaded, user]);
@@ -60,12 +63,13 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       }, stepDuration);
 
       // Animate progress bar from 0 to current value
-      const progressIncrement = (userData.levelExperience % 100) / steps;
+      const targetProgress = userData.levelExperience % 100;
+      const progressIncrement = targetProgress / steps;
       let currentProgress = 0;
       const progressTimer = setInterval(() => {
         currentProgress += progressIncrement;
-        if (currentProgress >= userData.levelExperience % 100) {
-          currentProgress = userData.levelExperience % 100;
+        if (currentProgress >= targetProgress) {
+          currentProgress = targetProgress;
           clearInterval(progressTimer);
         }
         setAnimatedProgress(currentProgress);

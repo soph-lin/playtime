@@ -3,32 +3,11 @@
 import React, { useEffect, useState } from "react";
 import { Sprite } from "./Sprite";
 import RippleText from "../effects/RippleText";
+import { useDialogueStore } from "@/stores/dialogueStore";
 
-interface DialogueStageProps {
-  isOpen: boolean;
-  onClose: () => void;
-  character: {
-    id: string;
-    name: string;
-    expression?: "happy" | "nervous" | "sad" | "angry" | "neutral";
-  };
-  text: string;
-  options?: Array<{
-    id: string;
-    text: string;
-    onSelect: () => void;
-  }>;
-  blurBackground?: boolean;
-}
+export default function DialogueStage() {
+  const { isOpen, currentDialogue, closeDialogue } = useDialogueStore();
 
-export default function DialogueStage({
-  isOpen,
-  onClose,
-  character,
-  text,
-  options = [],
-  blurBackground = true,
-}: DialogueStageProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showOptions, setShowOptions] = useState(false);
   const [keyDownTime, setKeyDownTime] = useState<number | null>(null);
@@ -39,7 +18,7 @@ export default function DialogueStage({
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
-        onClose();
+        closeDialogue();
       }
     };
 
@@ -47,11 +26,11 @@ export default function DialogueStage({
       document.addEventListener("keydown", handleEscape);
       return () => document.removeEventListener("keydown", handleEscape);
     }
-  }, [isOpen, onClose]);
+  }, [isOpen, closeDialogue]);
 
   // Handle keyboard navigation for options
   useEffect(() => {
-    if (!isOpen || !showOptions || options.length === 0) return;
+    if (!isOpen || !showOptions || !currentDialogue?.options || currentDialogue.options.length === 0) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowUp" || e.key === "ArrowDown") {
@@ -59,7 +38,13 @@ export default function DialogueStage({
           setKeyDownTime(Date.now());
           // Initial key press
           setSelectedIndex((prev) =>
-            e.key === "ArrowUp" ? (prev > 0 ? prev - 1 : options.length - 1) : prev < options.length - 1 ? prev + 1 : 0
+            e.key === "ArrowUp"
+              ? prev > 0
+                ? prev - 1
+                : currentDialogue.options!.length - 1
+              : prev < currentDialogue.options!.length - 1
+                ? prev + 1
+                : 0
           );
         } else {
           // Handle key repeat
@@ -71,15 +56,15 @@ export default function DialogueStage({
               e.key === "ArrowUp"
                 ? prev > 0
                   ? prev - 1
-                  : options.length - 1
-                : prev < options.length - 1
+                  : currentDialogue.options!.length - 1
+                : prev < currentDialogue.options!.length - 1
                   ? prev + 1
                   : 0
             );
           }
         }
       } else if (e.key === "Enter") {
-        options[selectedIndex]?.onSelect();
+        currentDialogue.options![selectedIndex]?.onSelect();
       }
     };
 
@@ -95,11 +80,11 @@ export default function DialogueStage({
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [isOpen, showOptions, options, selectedIndex, keyDownTime]);
+  }, [isOpen, showOptions, currentDialogue, selectedIndex, keyDownTime]);
 
   // Reset state when dialogue opens
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && currentDialogue) {
       setSelectedIndex(0);
       setShowOptions(false);
       setDisplayedText("");
@@ -108,8 +93,8 @@ export default function DialogueStage({
       // Start typing animation
       let currentIndex = 0;
       const typeInterval = setInterval(() => {
-        if (currentIndex < text.length) {
-          setDisplayedText(text.slice(0, currentIndex + 1));
+        if (currentIndex < currentDialogue.text.length) {
+          setDisplayedText(currentDialogue.text.slice(0, currentIndex + 1));
           currentIndex++;
         } else {
           setIsTyping(false);
@@ -121,20 +106,20 @@ export default function DialogueStage({
 
       return () => clearInterval(typeInterval);
     }
-  }, [isOpen, text]);
+  }, [isOpen, currentDialogue]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !currentDialogue) return null;
 
   return (
     <>
       {/* Blur background */}
-      {blurBackground && <div className="absolute top-0 left-0 w-full h-full bg-black/20 backdrop-blur-sm" />}
+      <div className="fixed top-0 left-0 w-full h-full bg-black/20 backdrop-blur-sm" />
 
       {/* Dialogue container */}
-      <div className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-end gap-6 z-10 pb-6">
+      <div className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-end gap-6 z-50 pb-6">
         {/* Character sprite */}
         <div className="flex flex-col items-center gap-2">
-          <Sprite characterId={character.id} size="large" />
+          <Sprite characterId={currentDialogue.character.id} size="large" />
         </div>
 
         {/* Dialogue container */}
@@ -143,7 +128,7 @@ export default function DialogueStage({
           {/* Character name in top left corner */}
           <div>
             <RippleText
-              text={character.name}
+              text={currentDialogue.character.name}
               className="text-3xl font-bold text-white"
               outline="cerulean"
               outlineSize="sm"
@@ -160,9 +145,9 @@ export default function DialogueStage({
 
           {/* Dialogue options */}
           <div className="min-h-[120px]">
-            {showOptions && options.length > 0 && (
+            {showOptions && currentDialogue.options && currentDialogue.options.length > 0 && (
               <div className="space-y-2 text-md">
-                {options.map((option, index) => (
+                {currentDialogue.options.map((option, index) => (
                   <div
                     key={option.id}
                     className={`p-2 rounded-lg cursor-pointer transition-all duration-200 dialogue-option ${

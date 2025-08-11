@@ -3,6 +3,7 @@ import { Nunito } from "next/font/google";
 import Script from "next/script";
 import { Toaster } from "react-hot-toast";
 import { ClerkProvider } from "@clerk/nextjs";
+import DialogueStage from "@/components/dialogue/DialogueStage";
 import "./globals.css";
 
 const nunito = Nunito({
@@ -29,6 +30,7 @@ export default function RootLayout({
         </head>
         <body className={`${nunito.variable} antialiased`}>
           {children}
+          <DialogueStage />
           <Toaster
             position="top-center"
             toastOptions={{

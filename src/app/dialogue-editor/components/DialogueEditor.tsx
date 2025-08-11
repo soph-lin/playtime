@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import CreateDialogueModal from "./CreateDialogueModal";
 import { getCharacterIcon } from "@/constants/characterInformation";
+import { Play, Pause, PencilSimple } from "@phosphor-icons/react";
+import { useDialogueStore } from "@/stores/dialogueStore";
 
 interface DialogueNode {
   id: string;
@@ -43,6 +45,51 @@ export default function DialogueEditor() {
 
   // Form state for editing existing trees
   const [editingTree, setEditingTree] = useState<DialogueTree | null>(null);
+
+  // Playtest state
+  const [isPlaytesting, setIsPlaytesting] = useState(false);
+
+  // Playtest functionality
+  const { openDialogue, closeDialogue } = useDialogueStore();
+
+  const handlePlaytest = () => {
+    if (!selectedTree) {
+      return;
+    }
+
+    // Convert the first dialogue node to dialogue data
+    const startNode = selectedTree.nodes.find((node) => node.id === "start");
+
+    if (startNode && startNode.type === "DIALOGUE") {
+      const dialogueData = {
+        character: {
+          id: selectedTree.characterName,
+          name: selectedTree.characterName,
+          expression: (startNode.data.expression as "happy" | "nervous" | "sad" | "angry" | "neutral") || "happy",
+        },
+        text: startNode.data.text || "Hello!",
+        options: [
+          {
+            id: "continue",
+            text: "Continue...",
+            onSelect: () => {
+              // For now, just close the dialogue
+              // Later we can implement full dialogue tree traversal
+              closeDialogue();
+            },
+          },
+        ],
+      };
+
+      openDialogue(dialogueData);
+      setIsPlaytesting(true);
+    }
+  };
+
+  const handleStopPlaytest = () => {
+    setIsPlaytesting(false);
+    closeDialogue();
+  };
 
   const handleCreateTree = useCallback(
     (treeData: { title: string; characterName: string; description: string }) => {
@@ -96,6 +143,23 @@ export default function DialogueEditor() {
   const handleCancelEditing = () => {
     setEditingTree(null);
   };
+
+  // Keyboard shortcut for playtest toggle - moved here after function definitions
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === "p" && selectedTree) {
+        e.preventDefault();
+        if (isPlaytesting) {
+          handleStopPlaytest();
+        } else {
+          handlePlaytest();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [selectedTree, isPlaytesting, handlePlaytest, handleStopPlaytest]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -167,12 +231,43 @@ export default function DialogueEditor() {
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900">{selectedTree.title}</h2>
                     <p className="text-gray-600">Character: {selectedTree.characterName}</p>
+                    {isPlaytesting && (
+                      <div className="mt-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium inline-flex items-center gap-2">
+                        🎮 Playtest Mode Active
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     {!editingTree ? (
-                      <Button variant="outline" onClick={() => handleStartEditing(selectedTree)}>
-                        Edit
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            if (isPlaytesting) {
+                              handleStopPlaytest();
+                            } else {
+                              handlePlaytest();
+                            }
+                          }}
+                          className={`${isPlaytesting ? "bg-green-100 border-green-300 text-green-700" : ""}`}
+                        >
+                          {isPlaytesting ? (
+                            <>
+                              <Pause size={16} />
+                              Stop
+                            </>
+                          ) : (
+                            <>
+                              <Play size={16} />
+                              Play
+                            </>
+                          )}
+                        </Button>
+                        <Button variant="outline" onClick={() => handleStartEditing(selectedTree)}>
+                          <PencilSimple size={16} />
+                          Edit
+                        </Button>
+                      </>
                     ) : (
                       <>
                         <Button variant="outline" onClick={handleCancelEditing}>

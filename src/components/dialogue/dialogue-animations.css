@@ -1,0 +1,164 @@
+/* Dialogue System Animations */
+
+/* Idle Animation - Bob up/down with slight shear */
+@keyframes idle-bob {
+  0%, 100% {
+    transform: translateY(0px) skewY(0deg);
+  }
+  50% {
+    transform: translateY(-8px) skewY(2deg);
+  }
+}
+
+@keyframes idle-shear {
+  0%, 100% {
+    transform: skewX(0deg) skewY(0deg);
+  }
+  25% {
+    transform: skewX(1deg) skewY(-1deg);
+  }
+  75% {
+    transform: skewX(-1deg) skewY(1deg);
+  }
+}
+
+.sprite-idle {
+  animation: 
+    idle-bob 3s ease-in-out infinite,
+    idle-shear 4s ease-in-out infinite;
+}
+
+/* Happy Expression - Sparkles */
+@keyframes sparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(180deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0) rotate(360deg);
+  }
+}
+
+.sparkle {
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+/* Nervous Expression - Sweat Drops */
+@keyframes sweat-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.5);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(0px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.5);
+  }
+}
+
+.sweat-drop {
+  animation: sweat-drop 1.5s ease-in-out infinite;
+}
+
+/* Sad Expression - Storm Clouds */
+@keyframes storm-cloud {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) translateY(-5px);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1) translateY(0px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.5) translateY(5px);
+  }
+}
+
+.storm-cloud {
+  animation: storm-cloud 2.5s ease-in-out infinite;
+}
+
+/* Angry Expression - Burst Clouds */
+@keyframes burst-cloud {
+  0% {
+    opacity: 0;
+    transform: scale(0) translateX(0px);
+  }
+  25% {
+    opacity: 1;
+    transform: scale(1.2) translateX(-2px);
+  }
+  75% {
+    opacity: 1;
+    transform: scale(1) translateX(2px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0) translateX(0px);
+  }
+}
+
+.burst-cloud {
+  animation: burst-cloud 1s ease-in-out infinite;
+}
+
+/* Dialogue Box Slide Animation */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-down {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+.dialogue-enter {
+  animation: slide-up 0.3s ease-out forwards;
+}
+
+.dialogue-exit {
+  animation: slide-down 0.3s ease-in forwards;
+}
+
+/* Option Hover Effects */
+.dialogue-option {
+  transition: all 0.2s ease-in-out;
+}
+
+.dialogue-option:hover {
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Character Name Glow */
+.character-name {
+  text-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+  transition: text-shadow 0.3s ease-in-out;
+}
+
+.character-name:hover {
+  text-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+} 

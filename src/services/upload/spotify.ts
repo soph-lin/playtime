@@ -126,7 +126,7 @@ export class SpotifyUploadService implements UploadService {
     return { tracks, playlistName: albumName };
   }
 
-  async uploadPlaylist(url: string): Promise<{ tracks: TrackData[]; playlistName: string }> {
+  async uploadPlaylist(url: string): Promise<{ tracks: TrackData[]; playlistName: string; playlistUrl: string }> {
     const playlistId = url.split("/").pop()?.split("?")[0];
     if (!playlistId) {
       throw new Error("Invalid playlist URL");
@@ -149,20 +149,43 @@ export class SpotifyUploadService implements UploadService {
     const playlistData = await playlistResponse.json();
     const playlistName = playlistData.name;
 
-    // Then get the tracks
-    const tracksResponse = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    // Fetch all tracks with pagination (Spotify API limit is 100 per request)
+    const allTracks: SpotifyTrack[] = [];
+    let offset = 0;
+    const limit = 100;
 
-    if (!tracksResponse.ok) {
-      const errorData = await tracksResponse.json();
-      throw new Error(errorData.error?.message || "Failed to fetch playlist tracks from Spotify");
+    while (true) {
+      const tracksResponse = await fetch(
+        `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=${limit}&offset=${offset}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!tracksResponse.ok) {
+        const errorData = await tracksResponse.json();
+        throw new Error(errorData.error?.message || "Failed to fetch playlist tracks from Spotify");
+      }
+
+      const data = await tracksResponse.json();
+      const tracks = data.items;
+
+      if (tracks.length === 0) {
+        break; // No more tracks to fetch
+      }
+
+      allTracks.push(...tracks);
+      offset += limit;
+
+      // If we got fewer tracks than the limit, we've reached the end
+      if (tracks.length < limit) {
+        break;
+      }
     }
 
-    const data = await tracksResponse.json();
-    const tracks = data.items.map((item: SpotifyTrack) => ({
+    const processedTracks = allTracks.map((item: SpotifyTrack) => ({
       spotifyId: item.track.id,
       title: item.track.name,
       artist: item.track.artists[0].name,
@@ -170,6 +193,6 @@ export class SpotifyUploadService implements UploadService {
       coverUrl: item.track.album.images[0]?.url,
     }));
 
-    return { tracks, playlistName };
+    return { tracks: processedTracks, playlistName, playlistUrl: url };
   }
 }

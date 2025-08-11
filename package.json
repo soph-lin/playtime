@@ -12,7 +12,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"prisma/**/*.prisma\"",
     "format:check": "prettier --check src",
     "build-db": "pnpm exec tsx src/scripts/build-db.ts",
-    "prisma": "pnpm exec prisma generate && pnpm exec prisma db push"
+    "prisma": "pnpm exec prisma generate && pnpm exec prisma db push",
+    "update-playlist-urls": "pnpm exec tsx scripts/update-playlist-urls.ts"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.9.0",

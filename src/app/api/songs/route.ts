@@ -97,6 +97,7 @@ export async function POST(request: NextRequest) {
     // Get track data from Spotify
     let tracks: TrackData[];
     let playlistName: string | undefined;
+    let playlistUrl: string | undefined;
     try {
       if (type === "track") {
         tracks = [await spotifyService.uploadTrack(url)];
@@ -104,6 +105,7 @@ export async function POST(request: NextRequest) {
         const result = await spotifyService.uploadPlaylist(url);
         tracks = result.tracks;
         playlistName = result.playlistName;
+        playlistUrl = result.playlistUrl;
       } else if (type === "album") {
         const result = await spotifyService.uploadAlbum(url);
         tracks = result.tracks;
@@ -133,6 +135,7 @@ export async function POST(request: NextRequest) {
         playlistName,
         playlistId: undefined,
         playlistCreated: false,
+        playlistUrl,
       });
     }
 
@@ -141,16 +144,41 @@ export async function POST(request: NextRequest) {
     let playlistCreated = false;
     if ((type === "playlist" || type === "album") && playlistName) {
       try {
-        const playlist = await prisma.playlist.create({
-          data: {
-            name: playlistName,
-            createdBy: null, // Admin-created playlist
-          },
-        });
-        playlistId = playlist.id;
-        playlistCreated = true;
+        // Check if playlist already exists (for backwards compatibility)
+        let existingPlaylist = null;
+        if (type === "playlist" && playlistUrl) {
+          existingPlaylist = await prisma.playlist.findFirst({
+            where: {
+              name: playlistName,
+              // Try to find by name first, then update with URL if found
+            },
+          });
+        }
+
+        if (existingPlaylist) {
+          // Update existing playlist with playlistUrl for backwards compatibility
+          const updatedPlaylist = await prisma.playlist.update({
+            where: { id: existingPlaylist.id },
+            data: {
+              playlistUrl: playlistUrl,
+              updatedAt: new Date(),
+            },
+          });
+          playlistId = updatedPlaylist.id;
+          playlistCreated = false; // Not newly created, just updated
+        } else {
+          // Create new playlist
+          const playlist = await prisma.playlist.create({
+            data: {
+              name: playlistName,
+              createdBy: null, // Admin-created playlist
+            },
+          });
+          playlistId = playlist.id;
+          playlistCreated = true;
+        }
       } catch (error) {
-        console.error("Failed to create playlist:", error);
+        console.error("Failed to create/update playlist:", error);
         // Continue with song uploads even if playlist creation fails
       }
     }
@@ -165,6 +193,7 @@ export async function POST(request: NextRequest) {
             type: "progress",
             playlistName,
             playlistCreated,
+            playlistUrl,
             progress: { processed: 0, total: tracks.length },
           };
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(initialUpdate)}\n\n`));
@@ -186,6 +215,7 @@ export async function POST(request: NextRequest) {
                   playlistName,
                   playlistId,
                   playlistCreated,
+                  playlistUrl,
                 };
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalUpdate)}\n\n`));
                 controller.close();
@@ -235,6 +265,7 @@ export async function POST(request: NextRequest) {
                   playlistName,
                   playlistId,
                   playlistCreated,
+                  playlistUrl,
                 };
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalUpdate)}\n\n`));
                 controller.close();
@@ -303,6 +334,7 @@ export async function POST(request: NextRequest) {
             playlistName,
             playlistId,
             playlistCreated,
+            playlistUrl,
           };
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalUpdate)}\n\n`));
           controller.close();

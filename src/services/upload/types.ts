@@ -12,7 +12,7 @@ export interface TrackData {
 
 export interface UploadService {
   uploadTrack(url: string): Promise<TrackData>;
-  uploadPlaylist(url: string): Promise<{ tracks: TrackData[]; playlistName: string }>;
+  uploadPlaylist(url: string): Promise<{ tracks: TrackData[]; playlistName: string; playlistUrl: string }>;
   uploadAlbum(url: string): Promise<{ tracks: TrackData[]; playlistName: string }>;
 }
 
@@ -53,6 +53,7 @@ export interface StreamingUploadResponse {
   playlistName?: string;
   playlistId?: string;
   playlistCreated?: boolean;
+  playlistUrl?: string;
   error?: string;
 }
 
@@ -75,6 +76,7 @@ export interface UploadResponse {
   playlistName?: string;
   playlistId?: string;
   playlistCreated?: boolean;
+  playlistUrl?: string;
 }
 
 export interface HistoryEntry {

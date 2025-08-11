@@ -151,14 +151,14 @@ enum DialogueNodeType {
 }
 
 model DialogueTree {
-  id          String   @id @default(cuid())
-  title       String
-  characterName String @map("character_name")
-  nodes       Json     // Dialogue node structure
-  connections Json     // Node connections
-  metadata    Json     @default("{}")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  title         String
+  characterName String   @map("character_name")
+  nodes         Json // Dialogue node structure
+  connections   Json // Node connections
+  metadata      Json     @default("{}")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt
 
   // Relations
   dialogueNodes DialogueNode[]
@@ -167,17 +167,17 @@ model DialogueTree {
 }
 
 model DialogueNode {
-  id          String           @id @default(cuid())
-  treeId      String           @map("tree_id")
-  type        DialogueNodeType
-  position    Json             // { x: number, y: number } for visual editor layout
-  data        Json             // Node-specific data (text, expressions, etc.)
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt
+  id        String           @id @default(cuid())
+  treeId    String           @map("tree_id")
+  type      DialogueNodeType
+  position  Json // { x: number, y: number } for visual editor layout
+  data      Json // Node-specific data (text, expressions, etc.)
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt
 
   // Relations
   tree DialogueTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
 
-  @@map("dialogue_nodes")
   @@index([treeId])
+  @@map("dialogue_nodes")
 }

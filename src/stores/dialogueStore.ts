@@ -20,7 +20,7 @@ interface DialogueState {
   // Current dialogue state
   isOpen: boolean;
   currentDialogue: DialogueData | null;
-  
+
   // Actions
   openDialogue: (dialogue: DialogueData) => void;
   closeDialogue: () => void;

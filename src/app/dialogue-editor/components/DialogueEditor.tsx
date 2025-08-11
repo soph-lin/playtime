@@ -49,6 +49,25 @@ export default function DialogueEditor() {
   // Playtest state
   const [isPlaytesting, setIsPlaytesting] = useState(false);
 
+  // Load existing dialogue trees from database
+  useEffect(() => {
+    const fetchDialogueTrees = async () => {
+      try {
+        const response = await fetch("/api/dialogue");
+        if (response.ok) {
+          const data = await response.json();
+          setDialogueTrees(data);
+        } else {
+          console.error("Failed to fetch dialogue trees");
+        }
+      } catch (error) {
+        console.error("Error fetching dialogue trees:", error);
+      }
+    };
+
+    fetchDialogueTrees();
+  }, []);
+
   // Playtest functionality
   const { openDialogue, closeDialogue } = useDialogueStore();
 
@@ -92,34 +111,29 @@ export default function DialogueEditor() {
   };
 
   const handleCreateTree = useCallback(
-    (treeData: { title: string; characterName: string; description: string }) => {
-      const newTree: DialogueTree = {
-        id: `tree_${Date.now()}`,
-        title: treeData.title,
-        characterName: treeData.characterName,
-        nodes: [
-          {
-            id: "start",
-            type: "DIALOGUE",
-            position: { x: 0, y: 0 },
-            data: {
-              text: "Hello!",
-              expression: "happy",
-            },
+    async (treeData: { title: string; characterName: string; description: string }) => {
+      try {
+        const response = await fetch("/api/dialogue", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        ],
-        connections: [],
-        metadata: {
-          description: treeData.description,
-          createdAt: new Date().toISOString(),
-        },
-      };
+          body: JSON.stringify(treeData),
+        });
 
-      setDialogueTrees((prevTrees) => [...prevTrees, newTree]);
-      setSelectedTree(newTree);
-      setIsCreateModalOpen(false);
+        if (response.ok) {
+          const newTree = await response.json();
+          setDialogueTrees((prevTrees) => [newTree, ...prevTrees]);
+          setSelectedTree(newTree);
+          setIsCreateModalOpen(false);
+        } else {
+          console.error("Failed to create dialogue tree");
+        }
+      } catch (error) {
+        console.error("Error creating dialogue tree:", error);
+      }
     },
-    [] // No dependencies needed
+    []
   );
 
   const handleCloseModal = useCallback(() => {

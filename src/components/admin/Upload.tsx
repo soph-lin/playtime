@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import UploadHistory, { HistoryEntry } from "./UploadHistory";
-import { UploadResponse } from "@/services/upload/types";
+import { StreamingUploadResponse } from "@/services/upload/types";
 import { cn } from "@/lib/utils";
 
 interface UploadProps {
@@ -98,112 +98,151 @@ export default function Upload({ service }: UploadProps) {
         if (done) break;
 
         const chunk = new TextDecoder().decode(value);
-        const data = JSON.parse(chunk) as UploadResponse;
+        const lines = chunk.split("\n");
 
-        // Update playlist information if available
-        if (urlType === "playlist" || urlType === "album") {
-          if (data.playlistName) {
-            playlistName = data.playlistName;
-            totalSongs = data.progress.total;
-          }
-          if (data.playlistCreated !== undefined) {
-            playlistCreated = data.playlistCreated;
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.slice(6)) as StreamingUploadResponse;
+
+              switch (data.type) {
+                case "progress":
+                  // Update playlist information if available
+                  if (data.playlistName) {
+                    playlistName = data.playlistName;
+                    totalSongs = data.progress?.total || 0;
+                  }
+                  if (data.playlistCreated !== undefined) {
+                    playlistCreated = data.playlistCreated;
+                  }
+                  break;
+
+                case "processing":
+                  // Add processing status for current track
+                  if (data.track) {
+                    const track = data.track;
+                    setHistory((prev) => [
+                      ...prev,
+                      {
+                        id: `processing-${track.id}-${Date.now()}`,
+                        title: track.title,
+                        artist: track.artist,
+                        status: "uploading_track" as const,
+                        message: `Processing '${track.title}' by ${track.artist}...`,
+                        error: undefined,
+                        timestamp: new Date().toISOString(),
+                      } as HistoryEntry,
+                    ]);
+                  }
+                  break;
+
+                case "song_result":
+                  // Update the processing entry with final result
+                  if (data.song) {
+                    const status =
+                      data.song.status === "success"
+                        ? "song_added"
+                        : data.song.status === "failed"
+                          ? "song_failed"
+                          : data.song.status === "already_added"
+                            ? "already_added"
+                            : "uploading_track";
+
+                    const message =
+                      data.song.status === "success"
+                        ? `Added '${data.song.title}' by ${data.song.artist}`
+                        : data.song.status === "failed"
+                          ? `Failed to add '${data.song.title}' by ${data.song.artist}`
+                          : data.song.status === "already_added"
+                            ? `'${data.song.title}' by ${data.song.artist} already exists`
+                            : `Processing '${data.song.title}' by ${data.song.artist}...`;
+
+                    // Update the processing entry
+                    setHistory((prev) => {
+                      const processingIndex = prev.findIndex((entry) =>
+                        entry.id.includes(`processing-${data.song!.id}`)
+                      );
+
+                      if (processingIndex !== -1) {
+                        const updated = [...prev];
+                        updated[processingIndex] = {
+                          ...updated[processingIndex],
+                          status,
+                          message,
+                          error: data.song?.error,
+                        };
+                        return updated;
+                      }
+
+                      // If no processing entry found, add a new one
+                      return [
+                        ...prev,
+                        {
+                          id: `${data.song!.id}-${Date.now()}`,
+                          title: data.song!.title,
+                          artist: data.song!.artist,
+                          status,
+                          message,
+                          error: data.song?.error,
+                          timestamp: new Date().toISOString(),
+                        } as HistoryEntry,
+                      ];
+                    });
+
+                    // Count successful uploads
+                    if (data.song.status === "success") {
+                      uploadedSongs++;
+                    }
+                  }
+                  break;
+
+                case "complete":
+                  // Update initial message with final counts and playlist info
+                  if (data.message) {
+                    setHistory((prev) => {
+                      const initialEntry = prev[0];
+                      if (initialEntry) {
+                        return [
+                          {
+                            ...initialEntry,
+                            status: "song_added",
+                            message: data.message!,
+                          },
+                          ...prev.slice(1),
+                        ];
+                      }
+                      return prev;
+                    });
+                  }
+                  break;
+
+                case "error":
+                  // Handle error
+                  if (data.error) {
+                    setHistory((prev) => [
+                      ...prev,
+                      {
+                        id: `error-${Date.now()}`,
+                        title: "Upload Error",
+                        artist: "",
+                        status: "song_failed" as const,
+                        message: data.error!,
+                        error: {
+                          step: "database" as const,
+                          message: data.error!,
+                        },
+                        timestamp: new Date().toISOString(),
+                      } as HistoryEntry,
+                    ]);
+                  }
+                  break;
+              }
+            } catch (parseError) {
+              console.error("Failed to parse streaming data:", parseError);
+            }
           }
         }
-
-        // Count successful uploads from this chunk
-        const successfulInChunk = data.songs.filter((song) => song.status === "success").length;
-        uploadedSongs += successfulInChunk;
-
-        // Update history with song statuses
-        setHistory((prev) => [
-          ...prev,
-          ...data.songs.map((song) => {
-            const timestamp = new Date().toISOString();
-            const status =
-              song.status === "success"
-                ? "song_added"
-                : song.status === "failed"
-                  ? "song_failed"
-                  : song.status === "already_added"
-                    ? "already_added"
-                    : urlType === "track"
-                      ? "uploading_track"
-                      : "uploading_playlist";
-
-            const message =
-              song.status === "success"
-                ? `Added '${song.title}' by ${song.artist}`
-                : song.status === "failed"
-                  ? `Failed to add '${song.title}' by ${song.artist}`
-                  : song.status === "already_added"
-                    ? `'${song.title}' by ${song.artist} already exists`
-                    : urlType === "track"
-                      ? `Uploading track '${song.title}' by ${song.artist}...`
-                      : urlType === "playlist"
-                        ? `Uploading playlist track '${song.title}' by ${song.artist}...`
-                        : `Uploading album track '${song.title}' by ${song.artist}...`;
-
-            return {
-              id: `${song.id}-${timestamp}`,
-              title: song.title,
-              artist: song.artist,
-              status,
-              message,
-              error: song.error,
-              timestamp,
-            } as HistoryEntry;
-          }),
-        ]);
       }
-
-      // Update initial message with final counts and playlist info
-      let finalMessage: string;
-      if (urlType === "track") {
-        finalMessage = "Uploaded track";
-      } else {
-        if (playlistCreated) {
-          const contentType = urlType === "playlist" ? "playlist" : "album";
-          finalMessage = `Created ${contentType} "${playlistName}" with ${uploadedSongs}/${totalSongs} songs`;
-        } else {
-          const contentType = urlType === "playlist" ? "playlist" : "album";
-          finalMessage = `Uploaded ${uploadedSongs}/${totalSongs} songs from ${contentType} "${playlistName}"`;
-        }
-      }
-
-      setHistory((prev) => {
-        const initialEntry = prev[0];
-        if (initialEntry) {
-          return [
-            {
-              ...initialEntry,
-              status: "song_added",
-              message: finalMessage,
-            },
-            ...prev.slice(1),
-          ];
-        }
-        return prev;
-      });
-
-      // Wait for all items to be visible before updating the final message
-      const finalMessageDelay = (history.length + 1) * 300; // Wait for all items + buffer
-      setTimeout(() => {
-        setVisibleHistory((prev) => {
-          const initialEntry = prev[0];
-          if (initialEntry) {
-            return [
-              {
-                ...initialEntry,
-                status: "song_added",
-                message: finalMessage,
-              },
-              ...prev.slice(1),
-            ];
-          }
-          return prev;
-        });
-      }, finalMessageDelay);
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
         // Don't add a new history entry for cancellation, just update the last one

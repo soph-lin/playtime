@@ -155,110 +155,180 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Process tracks sequentially with delay to avoid rate limiting
-    const processedSongs: UploadResponse["songs"] = [];
-    let processedCount = 0;
-    const totalSongs = tracks.length;
-
-    for (const track of tracks) {
-      try {
-        // Check if the request was aborted
-        if (signal?.aborted) {
-          return NextResponse.json({
-            message: `Upload cancelled by user. Processed ${processedCount}/${totalSongs} songs.`,
-            songs: processedSongs,
-            progress: {
-              processed: processedCount,
-              total: totalSongs,
-            },
-            playlistName,
-            playlistId,
-            playlistCreated,
-          });
-        }
-
-        const { song, status, error } = await processTrack(track, 0, signal);
-
-        processedSongs.push({
-          id: song?.id || track.spotifyId,
-          title: track.title,
-          artist: track.artist,
-          status,
-          error,
-        });
-
-        processedCount++;
-      } catch (error) {
-        if (error instanceof Error && error.message === "Aborted") {
-          return NextResponse.json({
-            message: `Upload cancelled by user. Processed ${processedCount}/${totalSongs} songs.`,
-            songs: processedSongs,
-            progress: {
-              processed: processedCount,
-              total: totalSongs,
-            },
-            playlistName,
-            playlistId,
-            playlistCreated,
-          });
-        }
-
-        processedSongs.push({
-          id: track.spotifyId,
-          title: track.title,
-          artist: track.artist,
-          status: "failed",
-          error: {
-            step: "database",
-            message: error instanceof Error ? error.message : "Failed to process track",
-          },
-        });
-        processedCount++;
-      }
-    }
-
-    // Add successful songs to playlist if playlist was created
-    if (playlistCreated && playlistId) {
-      const successfulSongIds = processedSongs
-        .filter((song) => song.status === "success")
-        .map((song) => song.id);
-
-      if (successfulSongIds.length > 0) {
+    // Create a streaming response
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
         try {
-          await prisma.playlistSong.createMany({
-            data: successfulSongIds.map((songId) => ({
-              playlistId,
-              songId,
-            })),
-          });
+          // Send initial progress update
+          const initialUpdate = {
+            type: "progress",
+            playlistName,
+            playlistCreated,
+            progress: { processed: 0, total: tracks.length },
+          };
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(initialUpdate)}\n\n`));
+
+          // Process tracks sequentially with real-time updates
+          const processedSongs: UploadResponse["songs"] = [];
+          let processedCount = 0;
+          const totalSongs = tracks.length;
+
+          for (const track of tracks) {
+            try {
+              // Check if the request was aborted
+              if (signal?.aborted) {
+                const finalUpdate = {
+                  type: "complete",
+                  message: `Upload cancelled by user. Processed ${processedCount}/${totalSongs} songs.`,
+                  songs: processedSongs,
+                  progress: { processed: processedCount, total: totalSongs },
+                  playlistName,
+                  playlistId,
+                  playlistCreated,
+                };
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalUpdate)}\n\n`));
+                controller.close();
+                return;
+              }
+
+              // Send "processing" update for current track
+              const processingUpdate = {
+                type: "processing",
+                track: {
+                  id: track.spotifyId,
+                  title: track.title,
+                  artist: track.artist,
+                  status: "processing" as const,
+                },
+                progress: { processed: processedCount, total: totalSongs },
+              };
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(processingUpdate)}\n\n`));
+
+              const { song, status, error } = await processTrack(track, 0, signal);
+
+              const processedSong = {
+                id: song?.id || track.spotifyId,
+                title: track.title,
+                artist: track.artist,
+                status,
+                error,
+              };
+
+              processedSongs.push(processedSong);
+              processedCount++;
+
+              // Send individual song result
+              const songUpdate = {
+                type: "song_result",
+                song: processedSong,
+                progress: { processed: processedCount, total: totalSongs },
+              };
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(songUpdate)}\n\n`));
+
+            } catch (error) {
+              if (error instanceof Error && error.message === "Aborted") {
+                const finalUpdate = {
+                  type: "complete",
+                  message: `Upload cancelled by user. Processed ${processedCount}/${totalSongs} songs.`,
+                  songs: processedSongs,
+                  progress: { processed: processedCount, total: totalSongs },
+                  playlistName,
+                  playlistId,
+                  playlistCreated,
+                };
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalUpdate)}\n\n`));
+                controller.close();
+                return;
+              }
+
+              const failedSong = {
+                id: track.spotifyId,
+                title: track.title,
+                artist: track.artist,
+                status: "failed" as const,
+                error: {
+                  step: "database" as const,
+                  message: error instanceof Error ? error.message : "Failed to process track",
+                },
+              };
+
+              processedSongs.push(failedSong);
+              processedCount++;
+
+              // Send failed song result
+              const songUpdate = {
+                type: "song_result",
+                song: failedSong,
+                progress: { processed: processedCount, total: totalSongs },
+              };
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(songUpdate)}\n\n`));
+            }
+          }
+
+          // Add successful songs to playlist if playlist was created
+          if (playlistCreated && playlistId) {
+            const successfulSongIds = processedSongs
+              .filter((song) => song.status === "success")
+              .map((song) => song.id);
+
+            if (successfulSongIds.length > 0) {
+              try {
+                await prisma.playlistSong.createMany({
+                  data: successfulSongIds.map((songId) => ({
+                    playlistId,
+                    songId,
+                  })),
+                });
+              } catch (error) {
+                console.error("Failed to add songs to playlist:", error);
+                // Don't fail the entire upload if playlist song addition fails
+              }
+            }
+          }
+
+          const successfulSongs = processedSongs.filter((song) => song.status === "success");
+          const failedSongs = processedSongs.filter((song) => song.status === "failed");
+          const skippedSongs = processedSongs.filter((song) => song.status === "already_added");
+
+          const contentType = type === "playlist" ? "playlist" : type === "album" ? "album" : "track";
+
+          // Send final completion update
+          const finalUpdate = {
+            type: "complete",
+            message: `Successfully imported ${successfulSongs.length} new song${successfulSongs.length > 1 ? "s" : ""}${
+              failedSongs.length > 0 ? ` (${failedSongs.length} failed)` : ""
+            }${skippedSongs.length > 0 ? ` (${skippedSongs.length} already exist)` : ""}${
+              playlistCreated ? ` and created ${contentType} "${playlistName}"` : ""
+            }`,
+            songs: processedSongs,
+            progress: { processed: processedCount, total: totalSongs },
+            playlistName,
+            playlistId,
+            playlistCreated,
+          };
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalUpdate)}\n\n`));
+          controller.close();
+
         } catch (error) {
-          console.error("Failed to add songs to playlist:", error);
-          // Don't fail the entire upload if playlist song addition fails
+          const errorUpdate = {
+            type: "error",
+            error: error instanceof Error ? error.message : "Failed to process upload",
+          };
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorUpdate)}\n\n`));
+          controller.close();
         }
-      }
-    }
-
-    const successfulSongs = processedSongs.filter((song) => song.status === "success");
-    const failedSongs = processedSongs.filter((song) => song.status === "failed");
-    const skippedSongs = processedSongs.filter((song) => song.status === "already_added");
-
-    const contentType = type === "playlist" ? "playlist" : type === "album" ? "album" : "track";
-
-    return NextResponse.json({
-      message: `Successfully imported ${successfulSongs.length} new song${successfulSongs.length > 1 ? "s" : ""}${
-        failedSongs.length > 0 ? ` (${failedSongs.length} failed)` : ""
-      }${skippedSongs.length > 0 ? ` (${skippedSongs.length} already exist)` : ""}${
-        playlistCreated ? ` and created ${contentType} "${playlistName}"` : ""
-      }`,
-      songs: processedSongs,
-      progress: {
-        processed: processedCount,
-        total: totalSongs,
       },
-      playlistName,
-      playlistId,
-      playlistCreated,
     });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      },
+    });
+
   } catch (error) {
     console.error("Error uploading:", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to upload" }, { status: 500 });

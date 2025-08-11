@@ -125,7 +125,28 @@ export async function POST(request: NextRequest) {
           total: 1,
         },
         playlistName,
+        playlistId: undefined,
+        playlistCreated: false,
       });
+    }
+
+    // Create playlist if uploading a playlist
+    let playlistId: string | undefined;
+    let playlistCreated = false;
+    if (type === "playlist" && playlistName) {
+      try {
+        const playlist = await prisma.playlist.create({
+          data: {
+            name: playlistName,
+            createdBy: null, // Admin-created playlist
+          },
+        });
+        playlistId = playlist.id;
+        playlistCreated = true;
+      } catch (error) {
+        console.error("Failed to create playlist:", error);
+        // Continue with song uploads even if playlist creation fails
+      }
     }
 
     // Process tracks sequentially with delay to avoid rate limiting
@@ -145,6 +166,8 @@ export async function POST(request: NextRequest) {
               total: totalSongs,
             },
             playlistName,
+            playlistId,
+            playlistCreated,
           });
         }
 
@@ -169,6 +192,8 @@ export async function POST(request: NextRequest) {
               total: totalSongs,
             },
             playlistName,
+            playlistId,
+            playlistCreated,
           });
         }
 
@@ -186,6 +211,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Add successful songs to playlist if playlist was created
+    if (playlistCreated && playlistId) {
+      const successfulSongIds = processedSongs
+        .filter((song) => song.status === "success")
+        .map((song) => song.id);
+
+      if (successfulSongIds.length > 0) {
+        try {
+          await prisma.playlistSong.createMany({
+            data: successfulSongIds.map((songId) => ({
+              playlistId,
+              songId,
+            })),
+          });
+        } catch (error) {
+          console.error("Failed to add songs to playlist:", error);
+          // Don't fail the entire upload if playlist song addition fails
+        }
+      }
+    }
+
     const successfulSongs = processedSongs.filter((song) => song.status === "success");
     const failedSongs = processedSongs.filter((song) => song.status === "failed");
     const skippedSongs = processedSongs.filter((song) => song.status === "already_added");
@@ -193,13 +239,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       message: `Successfully imported ${successfulSongs.length} new song${successfulSongs.length > 1 ? "s" : ""}${
         failedSongs.length > 0 ? ` (${failedSongs.length} failed)` : ""
-      }${skippedSongs.length > 0 ? ` (${skippedSongs.length} already exist)` : ""}`,
+      }${skippedSongs.length > 0 ? ` (${skippedSongs.length} already exist)` : ""}${
+        playlistCreated ? ` and created playlist "${playlistName}"` : ""
+      }`,
       songs: processedSongs,
       progress: {
         processed: processedCount,
         total: totalSongs,
       },
       playlistName,
+      playlistId,
+      playlistCreated,
     });
   } catch (error) {
     console.error("Error uploading:", error);

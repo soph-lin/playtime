@@ -79,6 +79,7 @@ export default function Upload({ type, service }: UploadProps) {
       if (!reader) throw new Error("No response body");
 
       let playlistName: string | undefined;
+      let playlistCreated = false;
       let totalSongs = 0;
       let uploadedSongs = 0;
 
@@ -89,22 +90,15 @@ export default function Upload({ type, service }: UploadProps) {
         const chunk = new TextDecoder().decode(value);
         const data = JSON.parse(chunk) as UploadResponse;
 
-        // Update playlist name if available
-        if (type === "playlist" && data.playlistName) {
-          playlistName = data.playlistName;
-          totalSongs = data.progress.total;
-          setHistory((prev) => [
-            {
-              id: prev[0].id,
-              title: "Upload Started",
-              artist: "",
-              status: "uploading_playlist",
-              message: `Uploading playlist "${playlistName}"...`,
-              error: undefined,
-              timestamp: prev[0].timestamp,
-            } as HistoryEntry,
-            ...prev.slice(1),
-          ]);
+        // Update playlist information if available
+        if (type === "playlist") {
+          if (data.playlistName) {
+            playlistName = data.playlistName;
+            totalSongs = data.progress.total;
+          }
+          if (data.playlistCreated !== undefined) {
+            playlistCreated = data.playlistCreated;
+          }
         }
 
         // Count successful uploads from this chunk
@@ -151,11 +145,17 @@ export default function Upload({ type, service }: UploadProps) {
         ]);
       }
 
-      // Update initial message with final counts
-      const finalMessage =
-        type === "track"
-          ? "Uploaded track"
-          : `Uploaded playlist "${playlistName}" (${uploadedSongs}/${totalSongs} songs)`;
+      // Update initial message with final counts and playlist info
+      let finalMessage: string;
+      if (type === "track") {
+        finalMessage = "Uploaded track";
+      } else {
+        if (playlistCreated) {
+          finalMessage = `Created playlist "${playlistName}" with ${uploadedSongs}/${totalSongs} songs`;
+        } else {
+          finalMessage = `Uploaded ${uploadedSongs}/${totalSongs} songs from playlist "${playlistName}"`;
+        }
+      }
 
       setHistory((prev) => {
         const initialEntry = prev[0];
@@ -254,6 +254,15 @@ export default function Upload({ type, service }: UploadProps) {
             Upload {type.charAt(0).toUpperCase() + type.slice(1)} from{" "}
             {service.charAt(0).toUpperCase() + service.slice(1)}
           </h2>
+
+          {type === "playlist" && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                This will create a new playlist and add all songs to your library. Songs that already exist will be
+                skipped when downloading, but added to the playlist.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-4">
             <div className="flex items-center space-x-4">

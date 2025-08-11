@@ -32,12 +32,21 @@ export interface UploadResponse {
     total: number;
   };
   playlistName?: string;
+  playlistId?: string;
+  playlistCreated?: boolean;
 }
 
 export interface HistoryEntry {
-  action: "uploading_playlist" | "uploading_track" | "song_added" | "song_failed";
+  id: string;
+  title: string;
+  artist: string;
+  status: "uploading_playlist" | "uploading_track" | "song_added" | "song_failed" | "already_added";
   message: string;
-  timestamp: Date;
+  error?: {
+    step: "spotify" | "soundcloud" | "database";
+    message: string;
+  };
+  timestamp: string;
 }
 
 export interface SearchService {

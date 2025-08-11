@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import CreateDialogueModal from "./CreateDialogueModal";
-import CharacterSprite from "./CharacterSprite";
+import { getCharacterIcon } from "@/constants/characterInformation";
 
 interface DialogueNode {
   id: string;
@@ -31,7 +31,6 @@ interface DialogueTree {
   metadata: {
     description?: string;
     tags?: string[];
-    difficulty?: string;
     createdAt?: string;
     [key: string]: unknown;
   };
@@ -45,44 +44,40 @@ export default function DialogueEditor() {
   // Form state for editing existing trees
   const [editingTree, setEditingTree] = useState<DialogueTree | null>(null);
 
-  const handleCreateTree = (treeData: {
-    title: string;
-    characterName: string;
-    description: string;
-    tags: string;
-    difficulty: string;
-  }) => {
-    const newTree: DialogueTree = {
-      id: `tree_${Date.now()}`,
-      title: treeData.title,
-      characterName: treeData.characterName,
-      nodes: [
-        {
-          id: "start",
-          type: "DIALOGUE",
-          position: { x: 0, y: 0 },
-          data: {
-            text: "Hello!",
-            expression: "happy",
+  const handleCreateTree = useCallback(
+    (treeData: { title: string; characterName: string; description: string }) => {
+      const newTree: DialogueTree = {
+        id: `tree_${Date.now()}`,
+        title: treeData.title,
+        characterName: treeData.characterName,
+        nodes: [
+          {
+            id: "start",
+            type: "DIALOGUE",
+            position: { x: 0, y: 0 },
+            data: {
+              text: "Hello!",
+              expression: "happy",
+            },
           },
+        ],
+        connections: [],
+        metadata: {
+          description: treeData.description,
+          createdAt: new Date().toISOString(),
         },
-      ],
-      connections: [],
-      metadata: {
-        description: treeData.description,
-        tags: treeData.tags
-          .split(",")
-          .map((t: string) => t.trim())
-          .filter(Boolean),
-        difficulty: treeData.difficulty,
-        createdAt: new Date().toISOString(),
-      },
-    };
+      };
 
-    setDialogueTrees([...dialogueTrees, newTree]);
-    setSelectedTree(newTree);
+      setDialogueTrees((prevTrees) => [...prevTrees, newTree]);
+      setSelectedTree(newTree);
+      setIsCreateModalOpen(false);
+    },
+    [] // No dependencies needed
+  );
+
+  const handleCloseModal = useCallback(() => {
     setIsCreateModalOpen(false);
-  };
+  }, []);
 
   const handleStartEditing = (tree: DialogueTree) => {
     setEditingTree({ ...tree });
@@ -151,7 +146,7 @@ export default function DialogueEditor() {
                       }`}
                     >
                       <div className="flex items-center gap-2">
-                        <CharacterSprite characterName={tree.characterName} />
+                        <span className="text-lg">{getCharacterIcon(tree.characterName)}</span>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-900 truncate">{tree.title}</p>
                           <p className="text-sm text-gray-500 capitalize">{tree.characterName}</p>
@@ -274,11 +269,7 @@ export default function DialogueEditor() {
       </div>
 
       {/* Create New Tree Modal */}
-      <CreateDialogueModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onCreateTree={handleCreateTree}
-      />
+      <CreateDialogueModal isOpen={isCreateModalOpen} onClose={handleCloseModal} onCreateTree={handleCreateTree} />
     </div>
   );
 }

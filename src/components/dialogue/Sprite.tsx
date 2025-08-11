@@ -3,14 +3,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 
-// Import character sprites
-import Blues from "@/assets/blues";
-import Drum from "@/assets/drum";
-import Sitar from "@/assets/sitar";
-import BongoDrum from "@/assets/bongo-drum";
-import Maracas from "@/assets/maracas";
-import RockGuitar from "@/assets/rock-guitar";
-import Accordion from "@/assets/accordion";
+import { getCharacterComponent } from "@/constants/characterInformation";
 
 interface SpriteProps {
   characterId: string;
@@ -18,17 +11,6 @@ interface SpriteProps {
   size?: "small" | "medium" | "large";
   className?: string;
 }
-
-// Character sprite mapping
-const CHARACTERS = {
-  blues: Blues,
-  drum: Drum,
-  sitar: Sitar,
-  "bongo-drum": BongoDrum,
-  maracas: Maracas,
-  "rock-guitar": RockGuitar,
-  accordion: Accordion,
-};
 
 // Expression-based particle effects
 const EXPRESSION_EFFECTS = {
@@ -47,7 +29,7 @@ const SIZE_VALUES = {
 };
 
 export function Sprite({ characterId, expression = "neutral", size = "medium", className }: SpriteProps) {
-  const Character = CHARACTERS[characterId as keyof typeof CHARACTERS];
+  const Character = getCharacterComponent(characterId);
   const sizeValue = SIZE_VALUES[size];
 
   if (!Character) {

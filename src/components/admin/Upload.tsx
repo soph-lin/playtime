@@ -253,10 +253,6 @@ export default function Upload({ service }: UploadProps) {
     }
   };
 
-  const getPlaceholder = () => {
-    return "https://open.spotify.com/track/... or https://open.spotify.com/playlist/... or https://open.spotify.com/album/...";
-  };
-
   return (
     <div className="flex flex-col min-h-screen">
       <div className="flex-1 pb-24">

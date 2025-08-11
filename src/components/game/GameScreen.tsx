@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "react-hot-toast";
 import useGameStore from "@/stores/gameStore";
 import { usePusher } from "@/hooks/usePusher";
@@ -45,27 +45,6 @@ export default function GameScreen() {
     setIsClient(true);
   }, []);
 
-  useEffect(() => {
-    const fetchSongs = async () => {
-      try {
-        const songs = await getAllSongs();
-        setAllSongs(songs);
-        if (session?.playlist) {
-          selectRandomTrack();
-        }
-        setIsLoading(false);
-      } catch (err) {
-        console.error("Failed to load songs:", err);
-        toast.error("Failed to load songs");
-        setIsLoading(false);
-      }
-    };
-
-    if (isClient) {
-      fetchSongs();
-    }
-  }, [isClient, session?.playlist]);
-
   const handleLeaveGame = async () => {
     if (!session || isLeaving) return;
 
@@ -84,7 +63,7 @@ export default function GameScreen() {
     }
   };
 
-  const selectRandomTrack = () => {
+  const selectRandomTrack = useCallback(() => {
     if (!session?.playlist) return;
 
     const playlistWithSongs = session.playlist as PlaylistWithSongs;
@@ -115,7 +94,29 @@ export default function GameScreen() {
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("resetTiming"));
     }
-  };
+  }, [session?.playlist, usedSongIds]);
+
+  // Fetch songs and select random track when component mounts or playlist changes
+  useEffect(() => {
+    const fetchSongs = async () => {
+      try {
+        const songs = await getAllSongs();
+        setAllSongs(songs);
+        if (session?.playlist) {
+          selectRandomTrack();
+        }
+        setIsLoading(false);
+      } catch (err) {
+        console.error("Failed to load songs:", err);
+        toast.error("Failed to load songs");
+        setIsLoading(false);
+      }
+    };
+
+    if (isClient) {
+      fetchSongs();
+    }
+  }, [isClient, session?.playlist, selectRandomTrack]);
 
   const handleGuess = async (song: Song) => {
     if (!currentTrack || !session) return;

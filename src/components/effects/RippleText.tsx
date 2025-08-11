@@ -35,7 +35,7 @@ export default function RippleText({
     }, 2000);
 
     return () => clearInterval(idleInterval);
-  }, []);
+  }, [randomRipple]);
 
   // Ripple animation
   useEffect(() => {

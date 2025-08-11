@@ -266,43 +266,6 @@ export default function SongLibrary({ song, editable = false, refreshSongs }: So
     }
   };
 
-  // Listen for player ready event when component mounts or track changes
-  useEffect(() => {
-    if (playerRef.current) {
-      try {
-        playerRef.current.bind(window.SC.Widget.Events.READY, () => {
-          try {
-            playerRef.current?.getCurrentSound((sound) => {
-              if (sound && sound.duration > 0 && selectedTrack) {
-                // Update the track duration with the real duration
-                setTrackDuration(sound.duration);
-
-                // Auto-update database if durations differ
-                if (song.duration !== sound.duration) {
-                  handleEditFields(sound.duration);
-                }
-              }
-            });
-          } catch (error) {
-            console.error("Error getting duration from SoundCloud player:", error);
-          }
-        });
-      } catch (error) {
-        console.error("Error binding to SoundCloud player ready event:", error);
-      }
-    }
-
-    return () => {
-      if (playerRef.current) {
-        try {
-          playerRef.current.unbind(window.SC.Widget.Events.READY);
-        } catch (error) {
-          console.error("Error unbinding from SoundCloud player ready event:", error);
-        }
-      }
-    };
-  }, [selectedTrack, song.duration]);
-
   const handlePlay = useCallback(() => {
     setIsPlaying(true);
     startTimeRef.current = Date.now();
@@ -410,33 +373,74 @@ export default function SongLibrary({ song, editable = false, refreshSongs }: So
     [selectedTrack, isPlaying, trackDuration]
   );
 
-  const handleEditFields = async (duration: number) => {
-    try {
-      const response = await fetch("/api/songs", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          songId: song.id,
-          action: "update",
-          duration,
-        }),
-      });
+  const handleEditFields = useCallback(
+    async (duration: number) => {
+      try {
+        const response = await fetch("/api/songs", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            songId: song.id,
+            action: "update",
+            duration,
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to update song duration");
+        if (!response.ok) {
+          throw new Error("Failed to update song duration");
+        }
+
+        // Update the track duration
+        setTrackDuration(duration);
+
+        // Refresh the songs list
+        refreshSongs();
+      } catch (err) {
+        console.error(err instanceof Error ? err.message : "Failed to update song duration");
       }
+    },
+    [song.id, refreshSongs]
+  );
 
-      // Update the track duration
-      setTrackDuration(duration);
+  // Listen for player ready event when component mounts or track changes
+  useEffect(() => {
+    const player = playerRef.current;
+    if (player) {
+      try {
+        player.bind(window.SC.Widget.Events.READY, () => {
+          try {
+            player.getCurrentSound((sound) => {
+              if (sound && sound.duration > 0 && selectedTrack) {
+                // Update the track duration with the real duration
+                setTrackDuration(sound.duration);
 
-      // Refresh the songs list
-      refreshSongs();
-    } catch (err) {
-      console.error(err instanceof Error ? err.message : "Failed to update song duration");
+                // Auto-update database if durations differ
+                if (song.duration !== sound.duration) {
+                  handleEditFields(sound.duration);
+                }
+              }
+            });
+          } catch (error) {
+            console.error("Error getting duration from SoundCloud player:", error);
+          }
+        });
+      } catch (error) {
+        console.error("Error binding to SoundCloud player ready event:", error);
+      }
     }
-  };
+
+    return () => {
+      if (player) {
+        try {
+          player.unbind(window.SC.Widget.Events.READY);
+        } catch (error) {
+          console.error("Error unbinding from SoundCloud player ready event:", error);
+        }
+      }
+    };
+  }, [selectedTrack, song.duration, handleEditFields]);
 
   return (
     <div

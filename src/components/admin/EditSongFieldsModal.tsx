@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { X } from "@phosphor-icons/react";
 import { createPortal } from "react-dom";
 
@@ -44,11 +44,11 @@ export default function EditSongFieldsModal({ currentDuration, onSave, onClose }
     }
   };
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsOpen(false);
     // Wait for the animation to complete before calling onClose
     setTimeout(onClose, 200);
-  };
+  }, [onClose]);
 
   // Close modal on Escape key
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function EditSongFieldsModal({ currentDuration, onSave, onClose }
     return () => {
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [onClose]);
+  }, [handleClose]);
 
   return createPortal(
     <>

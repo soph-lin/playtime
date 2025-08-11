@@ -11,13 +11,8 @@ export interface CharacterAssetProps extends BaseAssetProps {
   blush?: string;
 }
 
-// Interface for instrument assets (if they have different styling needs)
-export interface InstrumentAssetProps extends BaseAssetProps {
-  // Add instrument-specific props here if needed
-}
-
 // Union type for all possible asset props
-export type AssetProps = BaseAssetProps | CharacterAssetProps | InstrumentAssetProps;
+export type AssetProps = BaseAssetProps | CharacterAssetProps;
 
 // Default size for all assets (512px base)
 export const DEFAULT_ASSET_SIZE = 512;

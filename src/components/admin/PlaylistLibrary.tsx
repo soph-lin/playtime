@@ -5,6 +5,7 @@ import { Playlist, Song } from "@prisma/client";
 import { CaretDown, CaretRight, Trash } from "@phosphor-icons/react";
 import SongLibraryItem from "./SongLibraryItem";
 import DeletePlaylistModal from "./DeletePlaylistModal";
+import { toast } from "react-hot-toast";
 
 interface PlaylistWithSongs extends Playlist {
   songs: Song[];
@@ -103,7 +104,7 @@ export default function PlaylistLibrary({ searchQuery = "" }: PlaylistLibraryPro
       setSelectedPlaylist(null);
     } catch (err) {
       console.error("Error deleting playlist:", err);
-      alert("Failed to delete playlist. Please try again.");
+      toast.error("Failed to delete playlist. Please try again.");
     } finally {
       setIsDeleting(false);
     }

@@ -58,6 +58,12 @@
   --color-orange: #ffc82a;
   --color-light-gray: #ffffff;
   --color-medium-gray: #dfe3e7;
+
+  /* Custom z-index values */
+  --z-modal: 999;
+  --z-dropdown: 1000;
+  --z-tooltip: 1001;
+  --z-toast: 1002;
 }
 
 /* Dark theme */

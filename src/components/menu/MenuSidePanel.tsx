@@ -22,7 +22,7 @@ export default function MenuSidePanel({ title, content, isOpen, onClose }: MenuS
 
   return (
     <div
-      className={`absolute w-[40%] h-[70%] flex flex-col gap-8 rounded-2xl border-2 border-cerulean bg-white box-shadow-lg p-8 
+      className={`z-[var(--z-modal)] absolute w-[40%] h-[60%] flex flex-col gap-8 rounded-2xl border-2 border-cerulean bg-white box-shadow-lg p-8 
         transform transition-all duration-300 ease-in-out origin-center
         ${isOpen ? "scale-y-100 opacity-100" : "scale-y-0 opacity-0"}`}
     >

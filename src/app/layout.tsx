@@ -29,7 +29,14 @@ export default function RootLayout({
         </head>
         <body className={`${nunito.variable} antialiased`}>
           {children}
-          <Toaster position="top-center" />
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              style: {
+                zIndex: "var(--z-toast)",
+              },
+            }}
+          />
         </body>
       </html>
     </ClerkProvider>

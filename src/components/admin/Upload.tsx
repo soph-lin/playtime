@@ -88,11 +88,6 @@ export default function Upload({ service }: UploadProps) {
       const reader = response.body?.getReader();
       if (!reader) throw new Error("No response body");
 
-      let playlistName: string | undefined;
-      let playlistCreated = false;
-      let totalSongs = 0;
-      let uploadedSongs = 0;
-
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -107,14 +102,7 @@ export default function Upload({ service }: UploadProps) {
 
               switch (data.type) {
                 case "progress":
-                  // Update playlist information if available
-                  if (data.playlistName) {
-                    playlistName = data.playlistName;
-                    totalSongs = data.progress?.total || 0;
-                  }
-                  if (data.playlistCreated !== undefined) {
-                    playlistCreated = data.playlistCreated;
-                  }
+                  // Playlist info is available in data but not currently displayed in UI
                   break;
 
                 case "processing":
@@ -189,10 +177,7 @@ export default function Upload({ service }: UploadProps) {
                       ];
                     });
 
-                    // Count successful uploads
-                    if (data.song.status === "success") {
-                      uploadedSongs++;
-                    }
+                    // Note: Success count could be tracked here if needed for UI
                   }
                   break;
 

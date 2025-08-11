@@ -40,8 +40,8 @@ export async function PATCH(request: Request) {
     const existingUser = await db.user.findFirst({
       where: {
         username: username.trim(),
-        id: { not: user.id }
-      }
+        id: { not: user.id },
+      },
     });
 
     if (existingUser) {
@@ -53,8 +53,8 @@ export async function PATCH(request: Request) {
       where: { id: user.id },
       data: { username: username.trim() },
       include: {
-        achievements: true
-      }
+        achievements: true,
+      },
     });
 
     return NextResponse.json({ user: updatedUser });

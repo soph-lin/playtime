@@ -109,7 +109,6 @@ export async function createOrUpdateUser(clerkUser: ClerkUser): Promise<User> {
           totalExperience: 0,
           averageGuessTime: 0.0,
           totalGames: 0,
-          correctGuesses: 0,
           gamesWon: 0,
           tutorialComplete: false,
         },

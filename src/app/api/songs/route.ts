@@ -225,7 +225,6 @@ export async function POST(request: NextRequest) {
                 progress: { processed: processedCount, total: totalSongs },
               };
               controller.enqueue(encoder.encode(`data: ${JSON.stringify(songUpdate)}\n\n`));
-
             } catch (error) {
               if (error instanceof Error && error.message === "Aborted") {
                 const finalUpdate = {
@@ -268,9 +267,7 @@ export async function POST(request: NextRequest) {
 
           // Add successful songs to playlist if playlist was created
           if (playlistCreated && playlistId) {
-            const successfulSongIds = processedSongs
-              .filter((song) => song.status === "success")
-              .map((song) => song.id);
+            const successfulSongIds = processedSongs.filter((song) => song.status === "success").map((song) => song.id);
 
             if (successfulSongIds.length > 0) {
               try {
@@ -309,7 +306,6 @@ export async function POST(request: NextRequest) {
           };
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalUpdate)}\n\n`));
           controller.close();
-
         } catch (error) {
           const errorUpdate = {
             type: "error",
@@ -325,10 +321,9 @@ export async function POST(request: NextRequest) {
       headers: {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
+        Connection: "keep-alive",
       },
     });
-
   } catch (error) {
     console.error("Error uploading:", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to upload" }, { status: 500 });

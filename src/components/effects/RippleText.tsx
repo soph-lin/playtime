@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 interface RippleTextProps {
   text: string;
   outline?: string;
+  outlineSize?: "sm" | "md" | "lg";
   randomRipple?: boolean;
   className?: string;
   letterClassName?: string;
@@ -17,6 +18,7 @@ export default function RippleText({
   className,
   letterClassName,
   outline = "cerulean",
+  outlineSize = "md",
   randomRipple = false,
 }: RippleTextProps) {
   const [rippleIndex, setRippleIndex] = useState<number | null>(null);
@@ -69,6 +71,8 @@ export default function RippleText({
     };
   }, []);
 
+  const outlineClass = `text-outline-${outlineSize}`;
+
   return (
     <div className={cn("flex overflow-visible relative select-none", className)}>
       {text.split("").map((letter, index) => {
@@ -78,7 +82,7 @@ export default function RippleText({
         return (
           <span
             key={index}
-            className={cn("text-outline-lg", letterClassName, letter === " " && "mr-[1ch]")}
+            className={cn(outlineClass, letterClassName, letter === " " && "mr-[1ch]")}
             style={{
               ...(outline && { "--outline-color": `var(--color-${outline})` }),
               transform: `translateY(${

@@ -41,16 +41,9 @@ const EXPRESSION_EFFECTS = {
 
 // Size classes with pixel values for the new size prop system
 const SIZE_VALUES = {
-  small: 64, // w-16 = 64px
-  medium: 96, // w-24 = 96px
-  large: 128, // w-32 = 128px
-};
-
-// Size classes
-const SIZE_CLASSES = {
-  small: "w-16 h-16",
-  medium: "w-24 h-24",
-  large: "w-32 h-32",
+  small: 64,
+  medium: 128,
+  large: 256,
 };
 
 export function Sprite({ characterId, expression = "neutral", size = "medium", className }: SpriteProps) {
@@ -60,23 +53,16 @@ export function Sprite({ characterId, expression = "neutral", size = "medium", c
   if (!Character) {
     console.warn(`Character not found: ${characterId}`);
     return (
-      <div
-        className={cn(
-          "flex items-center justify-center bg-gray-200 rounded-lg text-gray-500",
-          SIZE_CLASSES[size],
-          className
-        )}
-      >
+      <div className={cn("flex items-center justify-center bg-gray-200 rounded-lg text-gray-500", className)}>
         <span className="text-sm">?</span>
       </div>
     );
   }
 
   const effectClass = EXPRESSION_EFFECTS[expression];
-  const sizeClass = SIZE_CLASSES[size];
 
   return (
-    <div className={cn("relative", sizeClass, className)}>
+    <div className={cn("relative", className)}>
       {/* Character Sprite */}
       <div className={cn("sprite-idle", effectClass && "relative")}>
         <Character size={sizeValue} />

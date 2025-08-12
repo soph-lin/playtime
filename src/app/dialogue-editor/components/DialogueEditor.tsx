@@ -5,17 +5,25 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import CreateDialogueModal from "./CreateDialogueModal";
+import DialogueNode from "./DialogueNode";
 import { getCharacterIcon } from "@/constants/characterInformation";
 import { Play, Pause, PencilSimple, Spinner, X } from "@phosphor-icons/react";
 import { useDialogueStore, type DialogueData } from "@/stores/dialogueStore";
 
 interface DialogueNode {
   id: string;
-  type: "DIALOGUE" | "OPTION" | "EVENT" | "CONDITION";
+  type: "DIALOGUE";
+  name: string;
   position: { x: number; y: number };
   data: {
     text?: string;
     expression?: string;
+    options?: Array<{
+      id: string;
+      text: string;
+      targetNodeId: string;
+    }>;
+    autoAdvance?: boolean; // When true, all options go to next node
     [key: string]: unknown;
   };
 }
@@ -44,6 +52,7 @@ const SHORTCUTS = {
   a: "add node",
   d: "delete node",
   c: "duplicate node",
+  esc: "deselect node",
   e: "toggle edit mode",
   s: "save changes",
   p: "toggle play",
@@ -91,14 +100,15 @@ export default function DialogueEditor() {
 
   // Playtest functionality
   const handlePlaytest = useCallback(() => {
-    if (selectedTree) {
+    const treeToPlay = editingTree || selectedTree;
+    if (treeToPlay) {
       setIsPlaytesting(true);
-      const startNode = selectedTree.nodes[0];
+      const startNode = treeToPlay.nodes[0];
       if (startNode && startNode.type === "DIALOGUE") {
         const dialogue: DialogueData = {
           character: {
-            id: selectedTree.characterName,
-            name: selectedTree.characterName,
+            id: treeToPlay.characterName,
+            name: treeToPlay.characterName,
             expression: (startNode.data.expression as "happy" | "nervous" | "sad" | "angry" | "neutral") || "neutral",
           },
           text: (startNode.data.text as string) || "Start of dialogue...",
@@ -110,12 +120,12 @@ export default function DialogueEditor() {
             },
           ],
         };
-        useDialogueStore.getState().openDialogue(dialogue, selectedTree, () => {
+        useDialogueStore.getState().openDialogue(dialogue, treeToPlay, () => {
           setIsPlaytesting(false);
         });
       }
     }
-  }, [selectedTree]);
+  }, [editingTree, selectedTree]);
 
   const handleStopPlaytest = useCallback(() => {
     setIsPlaytesting(false);
@@ -204,16 +214,19 @@ export default function DialogueEditor() {
   };
 
   const addNewNode = () => {
-    if (!editingTree) return;
+    if (!editingTree) return "";
 
     const newNodeId = `node_${Date.now()}`;
     const newNode = {
       id: newNodeId,
       type: "DIALOGUE" as const,
+      name: `Node ${editingTree.nodes.length + 1}`,
       position: { x: Math.random() * 200, y: Math.random() * 200 },
       data: {
         text: "New dialogue text",
         expression: "neutral" as const,
+        options: [],
+        autoAdvance: false,
       },
     };
 
@@ -224,6 +237,142 @@ export default function DialogueEditor() {
 
     setEditingTree(updatedTree);
     setSelectedNodeId(newNodeId);
+    return newNodeId;
+  };
+
+  const addOptionToNode = (nodeId: string) => {
+    if (!editingTree) return;
+
+    const updatedNodes = editingTree.nodes.map((node) =>
+      node.id === nodeId
+        ? {
+            ...node,
+            data: {
+              ...node.data,
+              options: [
+                ...(node.data.options || []),
+                {
+                  id: `option_${Date.now()}`,
+                  text: "Option",
+                  targetNodeId: "",
+                },
+              ],
+            },
+          }
+        : node
+    );
+
+    setEditingTree({
+      ...editingTree,
+      nodes: updatedNodes,
+    });
+  };
+
+  const updateOptionText = (nodeId: string, optionId: string, text: string) => {
+    if (!editingTree) return;
+
+    const updatedNodes = editingTree.nodes.map((node) =>
+      node.id === nodeId
+        ? {
+            ...node,
+            data: {
+              ...node.data,
+              options: (node.data.options || []).map((option) =>
+                option.id === optionId ? { ...option, text } : option
+              ),
+            },
+          }
+        : node
+    );
+
+    setEditingTree({
+      ...editingTree,
+      nodes: updatedNodes,
+    });
+  };
+
+  const updateOptionTarget = (nodeId: string, optionId: string, targetNodeId: string) => {
+    if (!editingTree) return;
+
+    const updatedNodes = editingTree.nodes.map((node) =>
+      node.id === nodeId
+        ? {
+            ...node,
+            data: {
+              ...node.data,
+              options: (node.data.options || []).map((option) =>
+                option.id === optionId ? { ...option, targetNodeId } : option
+              ),
+            },
+          }
+        : node
+    );
+
+    setEditingTree({
+      ...editingTree,
+      nodes: updatedNodes,
+    });
+  };
+
+  const deleteOption = (nodeId: string, optionId: string) => {
+    if (!editingTree) return;
+
+    const updatedNodes = editingTree.nodes.map((node) =>
+      node.id === nodeId
+        ? {
+            ...node,
+            data: {
+              ...node.data,
+              options: (node.data.options || []).filter((option) => option.id !== optionId),
+            },
+          }
+        : node
+    );
+
+    setEditingTree({
+      ...editingTree,
+      nodes: updatedNodes,
+    });
+  };
+
+  const toggleAutoAdvance = (nodeId: string) => {
+    if (!editingTree) return;
+
+    const updatedNodes = editingTree.nodes.map((node) =>
+      node.id === nodeId
+        ? {
+            ...node,
+            data: {
+              ...node.data,
+              autoAdvance: !node.data.autoAdvance,
+            },
+          }
+        : node
+    );
+
+    setEditingTree({
+      ...editingTree,
+      nodes: updatedNodes,
+    });
+  };
+
+  const changeNodeType = (nodeId: string, newType: "DIALOGUE") => {
+    if (!editingTree) return;
+
+    const updatedNodes = editingTree.nodes.map((node) =>
+      node.id === nodeId
+        ? {
+            ...node,
+            type: newType,
+            data: { text: "New dialogue text", expression: "neutral", options: [] },
+          }
+        : node
+    );
+
+    setEditingTree({
+      ...editingTree,
+      nodes: updatedNodes,
+    });
   };
 
   const duplicateNode = (nodeId: string) => {
@@ -267,6 +416,24 @@ export default function DialogueEditor() {
               ...node.data,
               [field]: value,
             },
+          }
+        : node
+    );
+
+    setEditingTree({
+      ...editingTree,
+      nodes: updatedNodes,
+    });
+  };
+
+  const updateNodeName = (nodeId: string, name: string) => {
+    if (!editingTree) return;
+
+    const updatedNodes = editingTree.nodes.map((node) =>
+      node.id === nodeId
+        ? {
+            ...node,
+            name,
           }
         : node
     );
@@ -408,20 +575,50 @@ export default function DialogueEditor() {
 
   // Keyboard shortcuts
   useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts if typing in an input
+    const handleKeyDown = (e: KeyboardEvent) => {
       const activeElement = document.activeElement;
       const isInputFocused =
         activeElement?.tagName === "INPUT" ||
         activeElement?.tagName === "TEXTAREA" ||
         activeElement?.tagName === "SELECT";
 
+      const key = e.key;
+
+      // Handle ESC key even when inputs are focused (for deselecting nodes)
+      if (key === "Escape" && selectedNodeId) {
+        // First, check if any Select dropdown is open and close it
+        const openSelects = document.querySelectorAll('[data-select-open="true"]');
+        if (openSelects.length > 0) {
+          // Close the first open select dropdown
+          const firstOpenSelect = openSelects[0] as HTMLElement;
+          const closeEvent = new Event("click", { bubbles: true });
+          firstOpenSelect.dispatchEvent(closeEvent);
+          console.log("Select dropdown closed via ESC");
+          return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+        setSelectedNodeId(null);
+
+        // Also defocus any active input field
+        if (activeElement && (activeElement.tagName === "INPUT" || activeElement.tagName === "TEXTAREA")) {
+          (activeElement as HTMLElement).blur();
+        }
+
+        console.log("Node deselected via ESC and input defocused");
+        return;
+      }
+
+      // Don't trigger other shortcuts if typing in an input
       if (isInputFocused) return;
 
-      const key = e.key.toLowerCase();
+      // Debug logging
+      console.log("Key pressed:", key, "selectedNodeId:", selectedNodeId);
 
       switch (key) {
         case "p":
+        case "P":
           if (selectedTree) {
             e.preventDefault();
             if (isPlaytesting) {
@@ -432,24 +629,28 @@ export default function DialogueEditor() {
           }
           break;
         case "a":
+        case "A":
           if (editingTree) {
             e.preventDefault();
             addNewNode();
           }
           break;
         case "d":
+        case "D":
           if (editingTree && selectedNodeId) {
             e.preventDefault();
             deleteNode(selectedNodeId);
           }
           break;
         case "c":
+        case "C":
           if (editingTree && selectedNodeId) {
             e.preventDefault();
             duplicateNode(selectedNodeId);
           }
           break;
         case "e":
+        case "E":
           if (selectedTree) {
             e.preventDefault();
             if (editingTree) {
@@ -462,6 +663,7 @@ export default function DialogueEditor() {
           }
           break;
         case "s":
+        case "S":
           if (editingTree && selectedTree) {
             e.preventDefault();
             handleSaveChanges();
@@ -470,8 +672,8 @@ export default function DialogueEditor() {
       }
     };
 
-    window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedTree, isPlaytesting, editingTree, selectedNodeId, handlePlaytest, handleStopPlaytest]);
 
   return (
@@ -565,11 +767,46 @@ export default function DialogueEditor() {
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-900">{selectedTree.title}</h2>
-                    <p className="text-gray-600">
-                      Character:{" "}
-                      {selectedTree.characterName.charAt(0).toUpperCase() + selectedTree.characterName.slice(1)}
-                    </p>
+                    <div className="flex items-center gap-3 mb-2">
+                      {editingTree ? (
+                        <Input
+                          placeholder="Dialogue title..."
+                          value={editingTree.title}
+                          onChange={(e) => setEditingTree({ ...editingTree, title: e.target.value })}
+                          className="text-xl font-semibold text-gray-900 bg-transparent border-none p-0 focus:ring-0 focus:border-none"
+                        />
+                      ) : (
+                        <>
+                          <h2 className="text-xl font-semibold text-gray-900">{selectedTree.title}</h2>
+                          <span className="text-xs px-3 py-1 bg-purple-100 text-purple-700 rounded-full capitalize">
+                            {selectedTree.characterName}
+                          </span>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Character Selection Below Header */}
+                    {editingTree && (
+                      <div className="flex items-center gap-3 mb-4">
+                        <label className="text-sm font-medium text-gray-700 min-w-[80px]">Character</label>
+                        <Select
+                          value={editingTree.characterName}
+                          onChange={(value) => setEditingTree({ ...editingTree, characterName: value })}
+                          options={[
+                            { value: "blues", label: "Blues" },
+                            { value: "drum", label: "Drum" },
+                            { value: "sitar", label: "Sitar" },
+                            { value: "maracas", label: "Maracas" },
+                            { value: "bongo-drum", label: "Bongo Drum" },
+                            { value: "rock-guitar", label: "Rock Guitar" },
+                            { value: "accordion", label: "Accordion" },
+                          ]}
+                          placeholder="Select character"
+                          searchable={true}
+                          className="w-48"
+                        />
+                      </div>
+                    )}
                     {isPlaytesting && (
                       <div className="mt-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium inline-flex items-center gap-2">
                         🎮 Playtest Mode Active
@@ -633,88 +870,81 @@ export default function DialogueEditor() {
 
                 {/* Node Editor */}
                 <div className="space-y-4">
-                  {(editingTree || selectedTree)?.nodes.map((node, index) => (
-                    <div
-                      key={node.id}
-                      draggable={editingTree !== null}
-                      onDragStart={(e) => handleDragStart(e, node.id)}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, node.id)}
-                      className={`border rounded-lg p-4 relative group cursor-move transition-all ${
-                        selectedNodeId === node.id
-                          ? "border-blue-500 border-2 shadow-lg"
-                          : "border-gray-200 hover:border-gray-300"
-                      } ${draggedNodeId === node.id ? "opacity-50" : ""}`}
-                      onClick={() => editingTree && handleNodeSelect(node.id)}
-                    >
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-sm font-medium text-gray-700">Node {index + 1}</span>
-                        <span className="text-xs px-2 py-1 bg-gray-100 rounded-full capitalize">
-                          {node.type.toLowerCase()}
-                        </span>
-                        {editingTree && (
-                          <span className="text-xs text-gray-500">(Tab to navigate, Shift+Tab for previous)</span>
-                        )}
+                  {/* Connection Visualization */}
+                  {editingTree && (
+                    <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h4 className="font-medium text-blue-900 mb-3">Connection Map</h4>
+                      <div className="space-y-2">
+                        {editingTree.nodes
+                          .filter((node) => node.data.options && node.data.options.length > 0)
+                          .flatMap((dialogueNode) =>
+                            (dialogueNode.data.options || []).map((option) => {
+                              const targetNode = editingTree.nodes.find((n) => n.id === option.targetNodeId);
+                              return (
+                                <div key={option.id} className="flex items-center gap-2 text-sm">
+                                  <span className="text-blue-700">💬</span>
+                                  <span className="font-medium text-blue-800">
+                                    &ldquo;{dialogueNode.data.text?.substring(0, 20)}...&rdquo;
+                                  </span>
+                                  <span className="text-blue-600">→</span>
+                                  <span className="text-blue-700">📋</span>
+                                  <span className="font-medium text-blue-800">
+                                    &ldquo;{option.text?.substring(0, 30)}...&rdquo;
+                                  </span>
+                                  <span className="text-blue-600">→</span>
+                                  <span className="text-blue-700">💬</span>
+                                  <span className="font-medium text-blue-800">
+                                    {targetNode
+                                      ? `&ldquo;${targetNode.data.text?.substring(0, 30)}...&rdquo;`
+                                      : "No target"}
+                                  </span>
+                                  {!targetNode && <span className="text-red-600 text-xs">⚠️ Broken connection</span>}
+                                </div>
+                              );
+                            })
+                          )}
+                        {editingTree.nodes.filter((node) => node.data.options && node.data.options.length > 0)
+                          .length === 0 && <p className="text-blue-600 text-sm italic">No options created yet</p>}
                       </div>
-
-                      {/* Delete node button - appears on hover */}
-                      {editingTree && (
-                        <button
-                          onClick={() => deleteNode(node.id)}
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
-                          title="Delete node"
-                          disabled={deletingNodeId === node.id}
-                        >
-                          {deletingNodeId === node.id ? (
-                            <Spinner size={16} className="animate-spin" />
-                          ) : (
-                            <X size={16} />
-                          )}
-                        </button>
-                      )}
-
-                      {node.type === "DIALOGUE" && (
-                        <div className="space-y-3">
-                          {editingTree ? (
-                            <>
-                              <Input
-                                ref={(el) => {
-                                  inputRefs.current[`${node.id}_text`] = el;
-                                }}
-                                placeholder="Enter dialogue text..."
-                                value={editingTree.nodes.find((n) => n.id === node.id)?.data.text || ""}
-                                onChange={(e) => updateNodeData(node.id, "text", e.target.value)}
-                                onKeyDown={(e) => handleTabNavigation(e, node.id)}
-                              />
-                              <Select
-                                value={editingTree.nodes.find((n) => n.id === node.id)?.data.expression || "neutral"}
-                                onChange={(value) => updateNodeData(node.id, "expression", value)}
-                                options={[
-                                  { value: "happy", label: "Happy" },
-                                  { value: "sad", label: "Sad" },
-                                  { value: "nervous", label: "Nervous" },
-                                  { value: "angry", label: "Angry" },
-                                  { value: "neutral", label: "Neutral" },
-                                ]}
-                                placeholder="Select expression"
-                                searchable={true}
-                              />
-                            </>
-                          ) : (
-                            <>
-                              <p className="text-gray-700 font-medium">Text: {node.data.text}</p>
-                              <p className="text-gray-600">Expression: {node.data.expression}</p>
-                            </>
-                          )}
-                        </div>
-                      )}
                     </div>
+                  )}
+
+                  {(editingTree || selectedTree)?.nodes.map((node, index) => (
+                    <DialogueNode
+                      key={node.id}
+                      node={node}
+                      index={index}
+                      isEditing={editingTree !== null}
+                      isSelected={selectedNodeId === node.id}
+                      isDragging={draggedNodeId === node.id}
+                      editingTree={editingTree}
+                      selectedTree={selectedTree}
+                      onNodeSelect={handleNodeSelect}
+                      onDragStart={handleDragStart}
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                      onDeleteNode={deleteNode}
+                      onUpdateNodeData={updateNodeData}
+                      onUpdateNodeName={updateNodeName}
+                      onChangeNodeType={changeNodeType}
+                      onAddOption={addOptionToNode}
+                      onUpdateOptionText={updateOptionText}
+                      onUpdateOptionTarget={updateOptionTarget}
+                      onDeleteOption={deleteOption}
+                      onToggleAutoAdvance={toggleAutoAdvance}
+                      onAddNewNode={addNewNode}
+                      deletingNodeId={deletingNodeId}
+                      inputRefs={inputRefs}
+                      onTabNavigation={handleTabNavigation}
+                    />
                   ))}
 
                   {editingTree && (
-                    <Button onClick={addNewNode} className="bg-gray-200 hover:bg-gray-300 text-gray-700">
-                      + Add New Node
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button onClick={addNewNode} className="bg-gray-200 hover:bg-gray-300 text-gray-700">
+                        + Add Node
+                      </Button>
+                    </div>
                   )}
                 </div>
               </div>

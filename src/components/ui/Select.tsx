@@ -79,7 +79,7 @@ const Select = React.forwardRef<HTMLDivElement, SelectProps>(
         : options;
 
     return (
-      <div className={cn("relative", className)} ref={ref}>
+      <div className={cn("relative", className)} ref={ref} data-select-open={isOpen}>
         {/* Trigger button / Search input */}
         <div
           className={cn(
@@ -122,7 +122,7 @@ const Select = React.forwardRef<HTMLDivElement, SelectProps>(
           )}
         >
           {/* Options list */}
-          <div className="p-1">
+          <div className="p-1 max-h-52 overflow-y-auto scrollbar-hide">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option) => (
                 <button

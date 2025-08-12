@@ -3,78 +3,23 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { X, Spinner } from "@phosphor-icons/react";
-
-interface DialogueOption {
-  id: string;
-  text: string;
-  targetNodeId: string;
-}
+import { X, Spinner, ArrowRight } from "@phosphor-icons/react";
+import type { DialogueTree, DialogueNode } from "@/types/dialogue";
 
 interface DialogueNodeProps {
-  node: {
-    id: string;
-    type: "DIALOGUE";
-    name: string;
-    position: { x: number; y: number };
-    data: {
-      text?: string;
-      expression?: string;
-      options?: Array<{
-        id: string;
-        text: string;
-        targetNodeId: string;
-      }>;
-      autoAdvance?: boolean;
-      [key: string]: unknown;
-    };
-  };
+  node: DialogueNode;
   index: number;
   isEditing: boolean;
   isSelected: boolean;
   isDragging: boolean;
-  editingTree: {
-    id: string;
-    title: string;
-    characterName: string;
-    nodes: Array<{
-      id: string;
-      type: "DIALOGUE";
-      name: string;
-      position: { x: number; y: number };
-      data: Record<string, unknown>;
-    }>;
-    connections: Array<{
-      id: string;
-      fromNodeId: string;
-      toNodeId: string;
-      [key: string]: unknown;
-    }>;
-    metadata: Record<string, unknown>;
-  } | null;
-  selectedTree: {
-    id: string;
-    title: string;
-    characterName: string;
-    nodes: Array<{
-      id: string;
-      type: "DIALOGUE";
-      name: string;
-      position: { x: number; y: number };
-      data: Record<string, unknown>;
-    }>;
-    connections: Array<{
-      id: string;
-      fromNodeId: string;
-      toNodeId: string;
-      [key: string]: unknown;
-    }>;
-    metadata: Record<string, unknown>;
-  } | null;
+  editingTree: DialogueTree | null;
+  selectedTree: DialogueTree | null;
   onNodeSelect: (nodeId: string) => void;
   onDragStart: (e: React.DragEvent, nodeId: string) => void;
   onDragOver: (e: React.DragEvent) => void;
+  onDragEnd: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent, targetNodeId: string) => void;
   onDeleteNode: (nodeId: string) => void;
   onUpdateNodeData: (nodeId: string, field: string, value: string) => void;
@@ -85,8 +30,12 @@ interface DialogueNodeProps {
   onDeleteOption: (nodeId: string, optionId: string) => void;
   onToggleAutoAdvance: (nodeId: string) => void;
   onAddNewNode: () => string; // Returns the ID of the new node
+  findNextAvailableNodeNumber: () => number;
+  getAvailableTargetNodes: (nodes: DialogueNode[], excludeNodeId: string) => Array<{ value: string; label: string }>;
   deletingNodeId: string | null;
-  inputRefs: React.MutableRefObject<{ [key: string]: HTMLInputElement | HTMLSelectElement | null }>;
+  inputRefs: React.MutableRefObject<{
+    [key: string]: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null;
+  }>;
   onTabNavigation: (e: React.KeyboardEvent, currentNodeId: string) => void;
 }
 
@@ -100,6 +49,7 @@ export default function DialogueNode({
   onNodeSelect,
   onDragStart,
   onDragOver,
+  onDragEnd,
   onDrop,
   onDeleteNode,
   onUpdateNodeData,
@@ -110,6 +60,8 @@ export default function DialogueNode({
   onDeleteOption,
   onToggleAutoAdvance,
   onAddNewNode,
+  findNextAvailableNodeNumber,
+  getAvailableTargetNodes,
   deletingNodeId,
   inputRefs,
   onTabNavigation,
@@ -131,7 +83,9 @@ export default function DialogueNode({
     if (editingName.trim()) {
       onUpdateNodeName(node.id, editingName.trim());
     } else {
-      setEditingName(node.name); // Reset to original if empty
+      // If name is empty, find next available node number and save
+      const nextNumber = findNextAvailableNodeNumber();
+      onUpdateNodeName(node.id, `Node ${nextNumber}`);
     }
     setIsEditingName(false);
   };
@@ -140,6 +94,7 @@ export default function DialogueNode({
     if (e.key === "Enter") {
       handleNameSave();
     } else if (e.key === "Escape") {
+      // Reset to current name (not original) and exit edit mode
       setEditingName(node.name);
       setIsEditingName(false);
     }
@@ -150,10 +105,11 @@ export default function DialogueNode({
       draggable={isEditing}
       onDragStart={(e) => onDragStart(e, node.id)}
       onDragOver={onDragOver}
+      onDragEnd={onDragEnd}
       onDrop={(e) => onDrop(e, node.id)}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`border rounded-lg p-4 relative group cursor-move transition-all ${
+      className={`border rounded-lg p-4 relative group transition-all ${
         isSelected ? "border-blue-500 border-2 shadow-lg" : "border-gray-200 hover:border-gray-300"
       } ${isDragging ? "opacity-50" : ""}`}
       onClick={() => isEditing && onNodeSelect(node.id)}
@@ -161,14 +117,22 @@ export default function DialogueNode({
       {/* Node Header */}
       <div className="flex items-center gap-2 mb-3">
         {isEditingName ? (
-          <Input
-            value={editingName}
-            onChange={(e) => setEditingName(e.target.value)}
-            onBlur={handleNameSave}
-            onKeyDown={handleNameKeyDown}
-            className="text-sm font-medium text-gray-700 w-32"
-            autoFocus
-          />
+          <div onMouseDown={(e) => e.stopPropagation()} onDragStart={(e) => e.preventDefault()}>
+            <Input
+              value={editingName}
+              onChange={(e) => setEditingName(e.target.value)}
+              onBlur={handleNameSave}
+              onKeyDown={handleNameKeyDown}
+              onMouseDown={(e) => e.stopPropagation()}
+              onMouseUp={(e) => e.stopPropagation()}
+              onDragStart={(e) => e.preventDefault()}
+              onSelect={(e) => e.stopPropagation()}
+              draggable={false}
+              className="text-sm font-medium text-gray-700 w-32"
+              autoFocus
+              minLength={1}
+            />
+          </div>
         ) : (
           <span
             className="text-sm font-medium text-gray-700 cursor-pointer hover:text-blue-600 hover:underline"
@@ -210,15 +174,29 @@ export default function DialogueNode({
         <div className="space-y-3">
           {/* Dialogue Text */}
           {isEditing ? (
-            <Input
-              ref={(el) => {
-                inputRefs.current[`${node.id}_text`] = el;
-              }}
-              placeholder="Enter dialogue text..."
-              value={(editingTree?.nodes.find((n) => n.id === node.id)?.data.text as string) || ""}
-              onChange={(e) => onUpdateNodeData(node.id, "text", e.target.value)}
-              onKeyDown={(e) => onTabNavigation(e, node.id)}
-            />
+            <div
+              onMouseDown={(e) => e.stopPropagation()}
+              onDragStart={(e) => e.preventDefault()}
+              onMouseEnter={() => (document.body.style.cursor = "text")}
+              onMouseLeave={() => (document.body.style.cursor = "default")}
+            >
+              <Textarea
+                ref={(el) => {
+                  inputRefs.current[`${node.id}_text`] = el;
+                }}
+                placeholder="Enter dialogue text..."
+                value={(editingTree?.nodes.find((n) => n.id === node.id)?.data.text as string) || ""}
+                onChange={(e) => onUpdateNodeData(node.id, "text", e.target.value)}
+                onKeyDown={(e) => onTabNavigation(e, node.id)}
+                onMouseDown={(e) => e.stopPropagation()}
+                onMouseUp={(e) => e.stopPropagation()}
+                onDragStart={(e) => e.preventDefault()}
+                onSelect={(e) => e.stopPropagation()}
+                draggable={false}
+                rows={3}
+                style={{ userSelect: "text", pointerEvents: "auto" }}
+              />
+            </div>
           ) : (
             <p className="text-gray-700 font-medium">{node.data.text}</p>
           )}
@@ -266,17 +244,30 @@ export default function DialogueNode({
                   targetNodeId: string;
                 }>)
               : node.data.options
-            )?.map((option: DialogueOption, optionIndex: number) => (
+            )?.map((option: { id: string; text: string; targetNodeId: string }, optionIndex: number) => (
               <div key={option.id} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
                 <span className="text-xs text-gray-500 w-6">{optionIndex + 1}</span>
                 {isEditing ? (
                   <>
-                    <Input
-                      placeholder="Option text..."
-                      value={option.text}
-                      onChange={(e) => onUpdateOptionText(node.id, option.id, e.target.value)}
+                    <div
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onDragStart={(e) => e.preventDefault()}
                       className="flex-1"
-                    />
+                    >
+                      <Textarea
+                        placeholder="Option text..."
+                        value={option.text}
+                        onChange={(e) => onUpdateOptionText(node.id, option.id, e.target.value)}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onMouseUp={(e) => e.stopPropagation()}
+                        onDragStart={(e) => e.preventDefault()}
+                        onSelect={(e) => e.stopPropagation()}
+                        draggable={false}
+                        className="w-full"
+                        rows={2}
+                        style={{ userSelect: "text", pointerEvents: "auto" }}
+                      />
+                    </div>
                     <Select
                       value={option.targetNodeId}
                       onChange={(value) => {
@@ -287,14 +278,7 @@ export default function DialogueNode({
                           onUpdateOptionTarget(node.id, option.id, value);
                         }
                       }}
-                      options={[
-                        ...(editingTree?.nodes
-                          .filter((n) => n.id !== node.id && n.type === "DIALOGUE")
-                          .map((n) => ({
-                            value: n.id,
-                            label: n.name,
-                          })) || []),
-                      ]}
+                      options={[...(editingTree ? getAvailableTargetNodes(editingTree.nodes, node.id) : [])]}
                       placeholder="Target node"
                       searchable={true}
                     />
@@ -309,10 +293,9 @@ export default function DialogueNode({
                 ) : (
                   <>
                     <span className="flex-1 text-gray-700">{option.text}</span>
-                    <span className="text-gray-600">
-                      →{" "}
-                      {(selectedTree?.nodes.find((n) => n.id === option.targetNodeId)?.data.text as string) ||
-                        "No target"}
+                    <span className="text-gray-600 flex items-center gap-1">
+                      <ArrowRight size={16} />
+                      {selectedTree?.nodes.find((n) => n.id === option.targetNodeId)?.name || "No target"}
                     </span>
                   </>
                 )}

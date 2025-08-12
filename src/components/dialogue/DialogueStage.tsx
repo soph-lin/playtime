@@ -13,6 +13,7 @@ export default function DialogueStage() {
   const [keyDownTime, setKeyDownTime] = useState<number | null>(null);
   const [displayedText, setDisplayedText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [typingInterval, setTypingInterval] = useState<NodeJS.Timeout | null>(null);
 
   // Handle keyboard controls for dialogue progression
   useEffect(() => {
@@ -22,15 +23,32 @@ export default function DialogueStage() {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         if (!isTyping) {
-          // If typing is done, progress to next dialogue
-          progressDialogue();
+          // If typing is done and we have options, show them
+          if (currentDialogue?.options && currentDialogue.options.length > 0 && !showOptions) {
+            setShowOptions(true);
+          } else if (currentDialogue?.options && currentDialogue.options.length === 0) {
+            // Only progress if there are no options
+            progressDialogue();
+          }
+        } else {
+          // If still typing, complete the typing animation immediately
+          if (typingInterval) {
+            clearInterval(typingInterval);
+            setTypingInterval(null);
+          }
+          setIsTyping(false);
+          setDisplayedText(currentDialogue?.text || "");
+          // Show options immediately if they exist
+          if (currentDialogue?.options && currentDialogue.options.length > 0) {
+            setShowOptions(true);
+          }
         }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, isTyping, progressDialogue]);
+  }, [isOpen, isTyping, progressDialogue, currentDialogue, showOptions]);
 
   // Handle keyboard navigation for options
   useEffect(() => {
@@ -38,6 +56,7 @@ export default function DialogueStage() {
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+        e.preventDefault(); // Prevent page scrolling
         if (!keyDownTime) {
           setKeyDownTime(Date.now());
           // Initial key press
@@ -68,6 +87,7 @@ export default function DialogueStage() {
           }
         }
       } else if (e.key === "Enter") {
+        e.preventDefault(); // Prevent form submission
         currentDialogue.options![selectedIndex]?.onSelect();
       }
     };
@@ -96,19 +116,27 @@ export default function DialogueStage() {
 
       // Start typing animation
       let currentIndex = 0;
-      const typeInterval = setInterval(() => {
+
+      const interval = setInterval(() => {
         if (currentIndex < currentDialogue.text.length) {
           setDisplayedText(currentDialogue.text.slice(0, currentIndex + 1));
           currentIndex++;
         } else {
           setIsTyping(false);
-          clearInterval(typeInterval);
-          // Show options after typing completes
-          setTimeout(() => setShowOptions(true), 500);
+          setTypingInterval(null);
+          // Show options immediately when typing completes
+          if (currentDialogue.options && currentDialogue.options.length > 0) {
+            setShowOptions(true);
+          }
         }
       }, 30); // Adjust speed here
 
-      return () => clearInterval(typeInterval);
+      setTypingInterval(interval);
+
+      return () => {
+        clearInterval(interval);
+        setTypingInterval(null);
+      };
     }
   }, [isOpen, currentDialogue]);
 

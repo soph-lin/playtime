@@ -7,45 +7,18 @@ import { Select } from "@/components/ui/Select";
 import CreateDialogueModal from "./CreateDialogueModal";
 import DialogueNode from "./DialogueNode";
 import { getCharacterIcon } from "@/constants/characterInformation";
-import { Play, Pause, PencilSimple, Spinner, X } from "@phosphor-icons/react";
-import { useDialogueStore, type DialogueData } from "@/stores/dialogueStore";
-
-interface DialogueNode {
-  id: string;
-  type: "DIALOGUE";
-  name: string;
-  position: { x: number; y: number };
-  data: {
-    text?: string;
-    expression?: string;
-    options?: Array<{
-      id: string;
-      text: string;
-      targetNodeId: string;
-    }>;
-    autoAdvance?: boolean; // When true, all options go to next node
-    [key: string]: unknown;
-  };
-}
-
-interface DialogueTree {
-  id: string;
-  title: string;
-  characterName: string;
-  nodes: DialogueNode[];
-  connections: Array<{
-    id: string;
-    fromNodeId: string;
-    toNodeId: string;
-    [key: string]: unknown;
-  }>;
-  metadata: {
-    description?: string;
-    tags?: string[];
-    createdAt?: string;
-    [key: string]: unknown;
-  };
-}
+import { PlayIcon, PauseIcon, PencilIcon, SpinnerIcon, XIcon, ArrowRightIcon } from "@phosphor-icons/react";
+import { useDialogueStore } from "@/stores/dialogueStore";
+import type { DialogueTree } from "@/types/dialogue";
+import { Skeleton } from "@mui/material";
+import {
+  prepareDialogueForPlaytest,
+  findNextAvailableNodeNumber,
+  createNewDialogueNode,
+  getAvailableTargetNodes,
+  sanitizeNodeName,
+  createNewDialogueOption,
+} from "@/lib/dialogue";
 
 // Keyboard shortcuts mapping
 const SHORTCUTS = {
@@ -73,15 +46,19 @@ export default function DialogueEditor() {
 
   // Loading states
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [deletingNodeId, setDeletingNodeId] = useState<string | null>(null);
   const [deletingTreeId, setDeletingTreeId] = useState<string | null>(null);
 
   // Refs for input focus detection
-  const inputRefs = useRef<{ [key: string]: HTMLInputElement | HTMLSelectElement | null }>({});
+  const inputRefs = useRef<{
+    [key: string]: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null;
+  }>({});
 
   // Load existing dialogues from database
   useEffect(() => {
     const fetchDialogueTrees = async () => {
+      setIsLoading(true);
       try {
         const response = await fetch("/api/dialogue");
         if (response.ok) {
@@ -92,6 +69,8 @@ export default function DialogueEditor() {
         }
       } catch (error) {
         console.error("Error fetching dialogues:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -103,26 +82,18 @@ export default function DialogueEditor() {
     const treeToPlay = editingTree || selectedTree;
     if (treeToPlay) {
       setIsPlaytesting(true);
-      const startNode = treeToPlay.nodes[0];
-      if (startNode && startNode.type === "DIALOGUE") {
-        const dialogue: DialogueData = {
-          character: {
-            id: treeToPlay.characterName,
-            name: treeToPlay.characterName,
-            expression: (startNode.data.expression as "happy" | "nervous" | "sad" | "angry" | "neutral") || "neutral",
-          },
-          text: (startNode.data.text as string) || "Start of dialogue...",
-          options: [
-            {
-              id: "continue",
-              text: "Continue...",
-              onSelect: () => useDialogueStore.getState().nextDialogue(),
-            },
-          ],
-        };
+
+      const dialogue = prepareDialogueForPlaytest(treeToPlay, (nodeId: string) =>
+        useDialogueStore.getState().navigateToNode(nodeId)
+      );
+
+      if (dialogue) {
         useDialogueStore.getState().openDialogue(dialogue, treeToPlay, () => {
           setIsPlaytesting(false);
         });
+      } else {
+        console.error("Failed to prepare dialogue for playtest");
+        setIsPlaytesting(false);
       }
     }
   }, [editingTree, selectedTree]);
@@ -213,22 +184,17 @@ export default function DialogueEditor() {
     setSelectedNodeId(null);
   };
 
+  // Find the next available node number
+  const getNextAvailableNodeNumber = () => {
+    if (!editingTree) return 1;
+    return findNextAvailableNodeNumber(editingTree.nodes);
+  };
+
   const addNewNode = () => {
     if (!editingTree) return "";
 
-    const newNodeId = `node_${Date.now()}`;
-    const newNode = {
-      id: newNodeId,
-      type: "DIALOGUE" as const,
-      name: `Node ${editingTree.nodes.length + 1}`,
-      position: { x: Math.random() * 200, y: Math.random() * 200 },
-      data: {
-        text: "New dialogue text",
-        expression: "neutral" as const,
-        options: [],
-        autoAdvance: false,
-      },
-    };
+    const nextNumber = getNextAvailableNodeNumber();
+    const newNode = createNewDialogueNode({ x: Math.random() * 200, y: Math.random() * 200 }, nextNumber);
 
     const updatedTree = {
       ...editingTree,
@@ -236,8 +202,8 @@ export default function DialogueEditor() {
     };
 
     setEditingTree(updatedTree);
-    setSelectedNodeId(newNodeId);
-    return newNodeId;
+    setSelectedNodeId(newNode.id);
+    return newNode.id;
   };
 
   const addOptionToNode = (nodeId: string) => {
@@ -249,14 +215,7 @@ export default function DialogueEditor() {
             ...node,
             data: {
               ...node.data,
-              options: [
-                ...(node.data.options || []),
-                {
-                  id: `option_${Date.now()}`,
-                  text: "Option",
-                  targetNodeId: "",
-                },
-              ],
+              options: [...(node.data.options || []), createNewDialogueOption()],
             },
           }
         : node
@@ -410,11 +369,14 @@ export default function DialogueEditor() {
   const updateNodeName = (nodeId: string, name: string) => {
     if (!editingTree) return;
 
+    // Ensure name is never empty
+    const safeName = sanitizeNodeName(name, editingTree.nodes);
+
     const updatedNodes = editingTree.nodes.map((node) =>
       node.id === nodeId
         ? {
             ...node,
-            name,
+            name: safeName,
           }
         : node
     );
@@ -530,6 +492,11 @@ export default function DialogueEditor() {
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDragEnd = () => {
+    // Reset dragged state when drag operation ends (whether successful or cancelled)
+    setDraggedNodeId(null);
   };
 
   const handleDrop = (e: React.DragEvent, targetNodeId: string) => {
@@ -702,7 +669,21 @@ export default function DialogueEditor() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow p-4">
               <h3 className="font-semibold text-gray-900 mb-4">Dialogues</h3>
-              {dialogueTrees.length === 0 ? (
+              {isLoading ? (
+                <div className="space-y-2">
+                  {[...Array(5)].map((_, index) => (
+                    <div key={index} className="p-3 rounded bg-gray-50">
+                      <div className="flex items-center gap-2">
+                        <Skeleton variant="circular" width={24} height={24} />
+                        <div className="flex-1 space-y-2">
+                          <Skeleton variant="text" width="80%" height={20} />
+                          <Skeleton variant="text" width="60%" height={16} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : dialogueTrees.length === 0 ? (
                 <p className="text-gray-500 text-sm">No dialogues created yet.</p>
               ) : (
                 <div className="space-y-2">
@@ -733,7 +714,11 @@ export default function DialogueEditor() {
                         title="Delete dialogue"
                         disabled={deletingTreeId === tree.id}
                       >
-                        {deletingTreeId === tree.id ? <Spinner size={16} className="animate-spin" /> : <X size={16} />}
+                        {deletingTreeId === tree.id ? (
+                          <SpinnerIcon size={16} className="animate-spin" />
+                        ) : (
+                          <XIcon size={16} />
+                        )}
                       </button>
                     </div>
                   ))}
@@ -806,22 +791,26 @@ export default function DialogueEditor() {
                               handlePlaytest();
                             }
                           }}
-                          className={`${isPlaytesting ? "bg-green-100 border-green-300 text-green-700" : ""}`}
+                          className={`p-2 flex flex-row items-center gap-1 ${isPlaytesting ? "bg-green-100 border-green-300 text-green-700" : ""}`}
                         >
                           {isPlaytesting ? (
                             <>
-                              <Pause size={16} />
+                              <PauseIcon size={16} />
                               Stop
                             </>
                           ) : (
                             <>
-                              <Play size={16} />
+                              <PlayIcon size={16} />
                               Play
                             </>
                           )}
                         </Button>
-                        <Button variant="outline" onClick={() => handleStartEditing(selectedTree)}>
-                          <PencilSimple size={16} />
+                        <Button
+                          variant="outline"
+                          className="p-2 flex flex-row items-center gap-1"
+                          onClick={() => handleStartEditing(selectedTree)}
+                        >
+                          <PencilIcon size={16} />
                           Edit
                         </Button>
                       </>
@@ -837,7 +826,7 @@ export default function DialogueEditor() {
                         >
                           {isSaving ? (
                             <>
-                              <Spinner size={16} className="animate-spin" />
+                              <SpinnerIcon size={16} className="animate-spin" />
                               Saving...
                             </>
                           ) : (
@@ -867,12 +856,12 @@ export default function DialogueEditor() {
                                   <span className="font-medium text-blue-800">
                                     &ldquo;{dialogueNode.data.text?.substring(0, 20)}...&rdquo;
                                   </span>
-                                  <span className="text-blue-600">→</span>
+                                  <ArrowRightIcon size={16} className="text-blue-600" />
                                   <span className="text-blue-700">📋</span>
                                   <span className="font-medium text-blue-800">
                                     &ldquo;{option.text?.substring(0, 30)}...&rdquo;
                                   </span>
-                                  <span className="text-blue-600">→</span>
+                                  <ArrowRightIcon size={16} className="text-blue-600" />
                                   <span className="text-blue-700">💬</span>
                                   <span className="font-medium text-blue-800">
                                     {targetNode
@@ -903,6 +892,7 @@ export default function DialogueEditor() {
                       onNodeSelect={handleNodeSelect}
                       onDragStart={handleDragStart}
                       onDragOver={handleDragOver}
+                      onDragEnd={handleDragEnd}
                       onDrop={handleDrop}
                       onDeleteNode={deleteNode}
                       onUpdateNodeData={updateNodeData}
@@ -913,6 +903,8 @@ export default function DialogueEditor() {
                       onDeleteOption={deleteOption}
                       onToggleAutoAdvance={toggleAutoAdvance}
                       onAddNewNode={addNewNode}
+                      findNextAvailableNodeNumber={getNextAvailableNodeNumber}
+                      getAvailableTargetNodes={getAvailableTargetNodes}
                       deletingNodeId={deletingNodeId}
                       inputRefs={inputRefs}
                       onTabNavigation={handleTabNavigation}

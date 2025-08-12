@@ -1,52 +1,5 @@
 import { create } from "zustand";
-
-export interface DialogueOption {
-  id: string;
-  text: string;
-  onSelect: () => void;
-}
-
-export interface DialogueData {
-  character: {
-    id: string;
-    name: string;
-    expression?: "happy" | "nervous" | "sad" | "angry" | "neutral";
-  };
-  text: string;
-  options?: DialogueOption[];
-}
-
-interface DialogueTree {
-  id: string;
-  title: string;
-  characterName: string;
-  nodes: Array<{
-    id: string;
-    type: "DIALOGUE" | "OPTION" | "EVENT" | "CONDITION";
-    position: { x: number; y: number };
-    data: Record<string, unknown>;
-  }>;
-  connections: Array<{
-    id: string;
-    fromNodeId: string;
-    toNodeId: string;
-    [key: string]: unknown;
-  }>;
-  metadata: Record<string, unknown>;
-}
-
-interface DialogueState {
-  isOpen: boolean;
-  currentDialogue: DialogueData | null;
-  dialogueTree: DialogueTree | null;
-  currentNodeIndex: number;
-  onDialogueEnd?: () => void;
-
-  openDialogue: (dialogue: DialogueData, tree?: DialogueTree, onEnd?: () => void) => void;
-  closeDialogue: () => void;
-  nextDialogue: () => void;
-  progressDialogue: () => void;
-}
+import type { DialogueData, DialogueTree, DialogueState } from "@/types/dialogue";
 
 export const useDialogueStore = create<DialogueState>((set, get) => ({
   isOpen: false,
@@ -109,6 +62,61 @@ export const useDialogueStore = create<DialogueState>((set, get) => ({
       // End of dialogue
       get().closeDialogue();
     }
+  },
+
+  // Navigate to a specific node by ID (for option navigation)
+  navigateToNode: (nodeId: string) => {
+    const { dialogueTree } = get();
+    if (!dialogueTree) return;
+
+    const targetNode = dialogueTree.nodes.find((node) => node.id === nodeId);
+    if (!targetNode) {
+      console.warn(`Target node not found: ${nodeId}`);
+      return;
+    }
+
+    // Find the index of the target node
+    const targetIndex = dialogueTree.nodes.findIndex((node) => node.id === nodeId);
+    if (targetIndex === -1) return;
+
+    // Debug: Log the target node data
+    console.log("Target node data:", targetNode.data);
+    console.log("Target node options:", targetNode.data.options);
+
+    // Safely extract options with better type handling
+    let options: Array<{ id: string; text: string; onSelect: () => void }> = [];
+
+    if (targetNode.data.options && Array.isArray(targetNode.data.options)) {
+      options = targetNode.data.options.map((option: { id: string; text: string; targetNodeId: string }) => {
+        console.log("Processing option:", option);
+        return {
+          id: option.id,
+          text: option.text,
+          onSelect: () => {
+            console.log(`Option clicked: ${option.text}, navigating to: ${option.targetNodeId}`);
+            get().navigateToNode(option.targetNodeId);
+          },
+        };
+      });
+    }
+
+    // Convert the target node to dialogue format
+    const targetDialogue: DialogueData = {
+      character: {
+        id: dialogueTree.characterName,
+        name: dialogueTree.characterName,
+        expression: (targetNode.data.expression as "happy" | "nervous" | "sad" | "angry" | "neutral") || "neutral",
+      },
+      text: (targetNode.data.text as string) || "Dialogue...",
+      options: options,
+    };
+
+    console.log("Created target dialogue:", targetDialogue);
+
+    set({
+      currentDialogue: targetDialogue,
+      currentNodeIndex: targetIndex,
+    });
   },
 
   progressDialogue: () => {

@@ -2,8 +2,8 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-
 import { getCharacterComponent } from "@/constants/characterInformation";
+import "./dialogue-animations.css";
 
 interface SpriteProps {
   characterId: string;

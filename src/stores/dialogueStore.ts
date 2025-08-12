@@ -89,7 +89,7 @@ export const useDialogueStore = create<DialogueState>((set, get) => ({
         character: {
           id: dialogueTree.characterName,
           name: dialogueTree.characterName,
-          expression: (nextNode.data.expression as "happy" | "nervous" | "sad" | "angry" | "neutral") || "happy",
+          expression: (nextNode.data.expression as "happy" | "nervous" | "sad" | "angry" | "neutral") || "neutral",
         },
         text: (nextNode.data.text as string) || "Next dialogue...",
         options: [

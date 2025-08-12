@@ -81,7 +81,7 @@ export default function DialogueEditor() {
           character: {
             id: selectedTree.characterName,
             name: selectedTree.characterName,
-            expression: (startNode.data.expression as "happy" | "nervous" | "sad" | "angry" | "neutral") || "happy",
+            expression: (startNode.data.expression as "happy" | "nervous" | "sad" | "angry" | "neutral") || "neutral",
           },
           text: (startNode.data.text as string) || "Start of dialogue...",
           options: [
@@ -189,7 +189,7 @@ export default function DialogueEditor() {
       position: { x: Math.random() * 200, y: Math.random() * 200 },
       data: {
         text: "New dialogue text",
-        expression: "happy" as const,
+        expression: "neutral" as const,
       },
     };
 
@@ -392,7 +392,7 @@ export default function DialogueEditor() {
                                 onChange={(e) => updateNodeData(node.id, "text", e.target.value)}
                               />
                               <select
-                                value={editingTree.nodes.find((n) => n.id === node.id)?.data.expression || "happy"}
+                                value={editingTree.nodes.find((n) => n.id === node.id)?.data.expression || "neutral"}
                                 onChange={(e) => updateNodeData(node.id, "expression", e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                               >

@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
             position: { x: 0, y: 0 },
             data: {
               text: "Hello!",
-              expression: "happy",
+              expression: "neutral",
             },
           },
         ],

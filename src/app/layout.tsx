@@ -3,6 +3,7 @@ import { Nunito } from "next/font/google";
 import Script from "next/script";
 import { Toaster } from "react-hot-toast";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Suspense } from "react";
 import DialogueStage from "@/components/dialogue/DialogueStage";
 import LoadingScreen from "@/components/LoadingScreen";
 import "./globals.css";
@@ -30,7 +31,7 @@ export default function RootLayout({
           <Script src="https://w.soundcloud.com/player/api.js" strategy="beforeInteractive" />
         </head>
         <body className={`${nunito.variable} antialiased`}>
-          {children}
+          <Suspense fallback={null}>{children}</Suspense>
           <DialogueStage />
           <LoadingScreen />
           <Toaster

@@ -6,7 +6,7 @@ import RippleText from "../effects/RippleText";
 import { useDialogueStore } from "@/stores/dialogueStore";
 
 export default function DialogueStage() {
-  const { isOpen, currentDialogue, closeDialogue } = useDialogueStore();
+  const { isOpen, currentDialogue, progressDialogue } = useDialogueStore();
 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showOptions, setShowOptions] = useState(false);
@@ -14,19 +14,23 @@ export default function DialogueStage() {
   const [displayedText, setDisplayedText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
 
-  // Handle escape key to close
+  // Handle keyboard controls for dialogue progression
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
-        closeDialogue();
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        if (!isTyping) {
+          // If typing is done, progress to next dialogue
+          progressDialogue();
+        }
       }
     };
 
-    if (isOpen) {
-      document.addEventListener("keydown", handleEscape);
-      return () => document.removeEventListener("keydown", handleEscape);
-    }
-  }, [isOpen, closeDialogue]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, isTyping, progressDialogue]);
 
   // Handle keyboard navigation for options
   useEffect(() => {

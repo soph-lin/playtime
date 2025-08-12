@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import CreateDialogueModal from "./CreateDialogueModal";
 import { getCharacterIcon } from "@/constants/characterInformation";
-import { Play, Pause, PencilSimple } from "@phosphor-icons/react";
-import { useDialogueStore } from "@/stores/dialogueStore";
+import { Play, Pause, PencilSimple, Spinner } from "@phosphor-icons/react";
+import { useDialogueStore, type DialogueData } from "@/stores/dialogueStore";
 
 interface DialogueNode {
   id: string;
@@ -49,6 +49,9 @@ export default function DialogueEditor() {
   // Playtest state
   const [isPlaytesting, setIsPlaytesting] = useState(false);
 
+  // Loading states
+  const [isSaving, setIsSaving] = useState(false);
+
   // Load existing dialogue trees from database
   useEffect(() => {
     const fetchDialogueTrees = async () => {
@@ -69,46 +72,37 @@ export default function DialogueEditor() {
   }, []);
 
   // Playtest functionality
-  const { openDialogue, closeDialogue } = useDialogueStore();
-
-  const handlePlaytest = () => {
-    if (!selectedTree) {
-      return;
-    }
-
-    // Convert the first dialogue node to dialogue data
-    const startNode = selectedTree.nodes.find((node) => node.id === "start");
-
-    if (startNode && startNode.type === "DIALOGUE") {
-      const dialogueData = {
-        character: {
-          id: selectedTree.characterName,
-          name: selectedTree.characterName,
-          expression: (startNode.data.expression as "happy" | "nervous" | "sad" | "angry" | "neutral") || "happy",
-        },
-        text: startNode.data.text || "Hello!",
-        options: [
-          {
-            id: "continue",
-            text: "Continue...",
-            onSelect: () => {
-              // For now, just close the dialogue
-              // Later we can implement full dialogue tree traversal
-              closeDialogue();
-            },
-          },
-        ],
-      };
-
-      openDialogue(dialogueData);
+  const handlePlaytest = useCallback(() => {
+    if (selectedTree) {
       setIsPlaytesting(true);
+      const startNode = selectedTree.nodes[0];
+      if (startNode && startNode.type === "DIALOGUE") {
+        const dialogue: DialogueData = {
+          character: {
+            id: selectedTree.characterName,
+            name: selectedTree.characterName,
+            expression: (startNode.data.expression as "happy" | "nervous" | "sad" | "angry" | "neutral") || "happy",
+          },
+          text: (startNode.data.text as string) || "Start of dialogue...",
+          options: [
+            {
+              id: "continue",
+              text: "Continue...",
+              onSelect: () => useDialogueStore.getState().nextDialogue(),
+            },
+          ],
+        };
+        useDialogueStore.getState().openDialogue(dialogue, selectedTree, () => {
+          setIsPlaytesting(false);
+        });
+      }
     }
-  };
+  }, [selectedTree]);
 
-  const handleStopPlaytest = () => {
+  const handleStopPlaytest = useCallback(() => {
     setIsPlaytesting(false);
-    closeDialogue();
-  };
+    useDialogueStore.getState().closeDialogue();
+  }, []);
 
   const handleCreateTree = useCallback(
     async (treeData: { title: string; characterName: string; description: string }) => {
@@ -145,17 +139,85 @@ export default function DialogueEditor() {
     setSelectedTree(tree);
   };
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (editingTree && selectedTree) {
-      const updatedTrees = dialogueTrees.map((tree) => (tree.id === selectedTree.id ? editingTree : tree));
-      setDialogueTrees(updatedTrees);
-      setSelectedTree(editingTree);
-      setEditingTree(null);
+      setIsSaving(true);
+      try {
+        const response = await fetch("/api/dialogue", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: selectedTree.id,
+            title: editingTree.title,
+            characterName: editingTree.characterName,
+            description: editingTree.metadata.description,
+            nodes: editingTree.nodes,
+            connections: editingTree.connections,
+          }),
+        });
+
+        if (response.ok) {
+          const updatedTree = await response.json();
+          const updatedTrees = dialogueTrees.map((tree) => (tree.id === selectedTree.id ? updatedTree : tree));
+          setDialogueTrees(updatedTrees);
+          setSelectedTree(updatedTree);
+          setEditingTree(null);
+        } else {
+          console.error("Failed to save changes");
+        }
+      } catch (error) {
+        console.error("Error saving changes:", error);
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
   const handleCancelEditing = () => {
     setEditingTree(null);
+  };
+
+  const addNewNode = () => {
+    if (!editingTree) return;
+
+    const newNodeId = `node_${Date.now()}`;
+    const newNode = {
+      id: newNodeId,
+      type: "DIALOGUE" as const,
+      position: { x: Math.random() * 200, y: Math.random() * 200 },
+      data: {
+        text: "New dialogue text",
+        expression: "happy" as const,
+      },
+    };
+
+    setEditingTree({
+      ...editingTree,
+      nodes: [...editingTree.nodes, newNode],
+    });
+  };
+
+  const updateNodeData = (nodeId: string, field: string, value: string) => {
+    if (!editingTree) return;
+
+    const updatedNodes = editingTree.nodes.map((node) =>
+      node.id === nodeId
+        ? {
+            ...node,
+            data: {
+              ...node.data,
+              [field]: value,
+            },
+          }
+        : node
+    );
+
+    setEditingTree({
+      ...editingTree,
+      nodes: updatedNodes,
+    });
   };
 
   // Keyboard shortcut for playtest toggle - moved here after function definitions
@@ -244,7 +306,10 @@ export default function DialogueEditor() {
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900">{selectedTree.title}</h2>
-                    <p className="text-gray-600">Character: {selectedTree.characterName}</p>
+                    <p className="text-gray-600">
+                      Character:{" "}
+                      {selectedTree.characterName.charAt(0).toUpperCase() + selectedTree.characterName.slice(1)}
+                    </p>
                     {isPlaytesting && (
                       <div className="mt-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium inline-flex items-center gap-2">
                         🎮 Playtest Mode Active
@@ -287,8 +352,19 @@ export default function DialogueEditor() {
                         <Button variant="outline" onClick={handleCancelEditing}>
                           Cancel
                         </Button>
-                        <Button onClick={handleSaveChanges} className="bg-blue-600 hover:bg-blue-700">
-                          Save Changes
+                        <Button
+                          onClick={handleSaveChanges}
+                          className="bg-blue-600 hover:bg-blue-700"
+                          disabled={isSaving}
+                        >
+                          {isSaving ? (
+                            <>
+                              <Spinner size={16} className="animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            "Save Changes"
+                          )}
                         </Button>
                       </>
                     )}
@@ -297,7 +373,7 @@ export default function DialogueEditor() {
 
                 {/* Simple Node Editor for now */}
                 <div className="space-y-4">
-                  {selectedTree.nodes.map((node) => (
+                  {(editingTree || selectedTree)?.nodes.map((node) => (
                     <div key={node.id} className="border rounded-lg p-4">
                       <div className="flex items-center gap-2 mb-3">
                         <span className="text-sm font-medium text-gray-700">Node: {node.id}</span>
@@ -308,60 +384,41 @@ export default function DialogueEditor() {
 
                       {node.type === "DIALOGUE" && (
                         <div className="space-y-3">
-                          <Input
-                            placeholder="Enter dialogue text..."
-                            value={editingTree?.nodes.find((n) => n.id === node.id)?.data.text || node.data.text || ""}
-                            onChange={(e) => {
-                              if (editingTree) {
-                                const updatedEditingTree = { ...editingTree };
-                                const nodeIndex = updatedEditingTree.nodes.findIndex((n) => n.id === node.id);
-                                if (nodeIndex !== -1) {
-                                  updatedEditingTree.nodes[nodeIndex] = {
-                                    ...updatedEditingTree.nodes[nodeIndex],
-                                    data: {
-                                      ...updatedEditingTree.nodes[nodeIndex].data,
-                                      text: e.target.value,
-                                    },
-                                  };
-                                }
-                                setEditingTree(updatedEditingTree);
-                              }
-                            }}
-                          />
-                          <select
-                            value={
-                              editingTree?.nodes.find((n) => n.id === node.id)?.data.expression ||
-                              node.data.expression ||
-                              "happy"
-                            }
-                            onChange={(e) => {
-                              if (editingTree) {
-                                const updatedEditingTree = { ...editingTree };
-                                const nodeIndex = updatedEditingTree.nodes.findIndex((n) => n.id === node.id);
-                                if (nodeIndex !== -1) {
-                                  updatedEditingTree.nodes[nodeIndex] = {
-                                    ...updatedEditingTree.nodes[nodeIndex],
-                                    data: {
-                                      ...updatedEditingTree.nodes[nodeIndex].data,
-                                      expression: e.target.value,
-                                    },
-                                  };
-                                }
-                                setEditingTree(updatedEditingTree);
-                              }
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                          >
-                            <option value="happy">Happy</option>
-                            <option value="sad">Sad</option>
-                            <option value="nervous">Nervous</option>
-                            <option value="angry">Angry</option>
-                            <option value="neutral">Neutral</option>
-                          </select>
+                          {editingTree ? (
+                            <>
+                              <Input
+                                placeholder="Enter dialogue text..."
+                                value={editingTree.nodes.find((n) => n.id === node.id)?.data.text || ""}
+                                onChange={(e) => updateNodeData(node.id, "text", e.target.value)}
+                              />
+                              <select
+                                value={editingTree.nodes.find((n) => n.id === node.id)?.data.expression || "happy"}
+                                onChange={(e) => updateNodeData(node.id, "expression", e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                              >
+                                <option value="happy">Happy</option>
+                                <option value="sad">Sad</option>
+                                <option value="nervous">Nervous</option>
+                                <option value="angry">Angry</option>
+                                <option value="neutral">Neutral</option>
+                              </select>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-gray-700 font-medium">Text: {node.data.text}</p>
+                              <p className="text-gray-600">Expression: {node.data.expression}</p>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
                   ))}
+
+                  {editingTree && (
+                    <Button onClick={addNewNode} className="bg-gray-200 hover:bg-gray-300 text-gray-700">
+                      + Add New Node
+                    </Button>
+                  )}
                 </div>
               </div>
             ) : (

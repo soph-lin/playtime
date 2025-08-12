@@ -4,6 +4,7 @@ import Script from "next/script";
 import { Toaster } from "react-hot-toast";
 import { ClerkProvider } from "@clerk/nextjs";
 import DialogueStage from "@/components/dialogue/DialogueStage";
+import LoadingScreen from "@/components/LoadingScreen";
 import "./globals.css";
 
 const nunito = Nunito({
@@ -31,6 +32,7 @@ export default function RootLayout({
         <body className={`${nunito.variable} antialiased`}>
           {children}
           <DialogueStage />
+          <LoadingScreen />
           <Toaster
             position="top-center"
             toastOptions={{

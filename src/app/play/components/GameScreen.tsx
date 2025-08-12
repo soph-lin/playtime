@@ -11,7 +11,7 @@ import GuessModal from "./GuessModal";
 import UserStats from "./UserStats";
 import { useUser } from "@clerk/nextjs";
 import { useUserExperience } from "@/hooks/useUserExperience";
-import LoadingScreen from "@/components/LoadingScreen";
+import { useLoadingStore } from "@/stores/loadingStore";
 
 interface PlaylistWithSongs extends Playlist {
   songs: Song[];
@@ -19,11 +19,11 @@ interface PlaylistWithSongs extends Playlist {
 
 export default function GameScreen() {
   const session = useGameStore((state) => state.session);
-
   const leaveGame = useGameStore((state) => state.leaveGame);
   const [isLeaving, setIsLeaving] = useState(false);
   const { user } = useUser();
   const { addExperience } = useUserExperience();
+  const { setLoading } = useLoadingStore();
 
   const [currentTrack, setCurrentTrack] = useState<Song | null>(null);
   const [isGuessModalOpen, setIsGuessModalOpen] = useState(false);
@@ -32,7 +32,6 @@ export default function GameScreen() {
   const [givenUp, setGivenUp] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [isClient, setIsClient] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [allSongs, setAllSongs] = useState<Song[]>([]);
   const [usedSongIds, setUsedSongIds] = useState<Set<string>>(new Set());
 
@@ -43,7 +42,8 @@ export default function GameScreen() {
 
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    setLoading(true); // Start loading when component mounts
+  }, [setLoading]);
 
   const handleLeaveGame = async () => {
     if (!session || isLeaving) return;
@@ -105,18 +105,18 @@ export default function GameScreen() {
         if (session?.playlist) {
           selectRandomTrack();
         }
-        setIsLoading(false);
+        setLoading(false);
       } catch (err) {
         console.error("Failed to load songs:", err);
         toast.error("Failed to load songs");
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
     if (isClient) {
       fetchSongs();
     }
-  }, [isClient, session?.playlist, selectRandomTrack]);
+  }, [isClient, session?.playlist]);
 
   const handleGuess = async (song: Song) => {
     if (!currentTrack || !session) return;
@@ -193,16 +193,11 @@ export default function GameScreen() {
     return null;
   }
 
-  if (isLoading) {
-    return (
-      <LoadingScreen isLoading={true}>
-        <div />
-      </LoadingScreen>
-    );
-  }
-
-  if (allSongs.length === 0) {
-    return <div className="text-center p-4">No songs available</div>;
+  // Don't show "No songs available" while loading - the LoadingScreen will handle that
+  if (allSongs.length === 0 && !useLoadingStore.getState().isLoading) {
+    // Redirect to menu with error message
+    window.location.href = "/?error=no-songs";
+    return null;
   }
 
   return (

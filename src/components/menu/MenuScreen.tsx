@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
+import { useSearchParams } from "next/navigation";
 import Menu from "@/components/menu/Menu";
 import MenuSidePanel from "@/components/menu/MenuSidePanel";
 import StartGameModal from "@/components/menu/StartGameModal";
@@ -13,9 +15,20 @@ import { useUser, useClerk } from "@clerk/nextjs";
 export default function MenuScreen() {
   const { user, isLoaded } = useUser();
   const { signOut } = useClerk();
+  const searchParams = useSearchParams();
   const [selectedOption, setSelectedOption] = useState<string>("Start Game");
   const [showSidePanel, setShowSidePanel] = useState<boolean>(false);
   const [showStartGameModal, setShowStartGameModal] = useState<boolean>(false);
+
+  // Check for error parameters and show toasts
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error === "no-songs") {
+      toast.error("Aww, no songs were found in the playlist! Please try another one.");
+      // Clean up the URL by removing the error parameter
+      window.history.replaceState({}, "", "/");
+    }
+  }, [searchParams]);
 
   // Create menu options based on authentication status
   const baseMenuOptions = ["Start Game", "How to Play", "Settings"];

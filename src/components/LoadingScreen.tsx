@@ -6,15 +6,12 @@ import { LOADING_SPLASH_MESSAGES } from "@/constants/loading";
 import Ellipsis from "@/components/effects/Ellipsis";
 import FlatRecord from "@/components/3d/FlatRecord";
 import { Canvas } from "@react-three/fiber";
+import { useLoadingStore } from "@/stores/loadingStore";
 
 const SPLASH_MESSAGE_INTERVAL = 2000; // 2 seconds
 
-interface LoadingScreenProps {
-  isLoading: boolean;
-  children: React.ReactNode;
-}
-
-export default function LoadingScreen({ isLoading, children }: LoadingScreenProps) {
+export default function LoadingScreen() {
+  const isLoading = useLoadingStore((state) => state.isLoading);
   const [splashMessage, setSplashMessage] = useState<string>("");
   const [isFading, setIsFading] = useState<boolean>(false);
 
@@ -43,7 +40,7 @@ export default function LoadingScreen({ isLoading, children }: LoadingScreenProp
   }, [isLoading]);
 
   if (!isLoading) {
-    return <>{children}</>;
+    return null;
   }
 
   return (

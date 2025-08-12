@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import SongLibraryItem from "./SongLibraryItem";
 import { Song } from "@prisma/client";
-import LoadingSpinner from "../effects/LoadingSpinner";
+import LoadingSpinner from "@/components/effects/LoadingSpinner";
 import { getAllSongs } from "@/services/songService";
-import Modal from "../ui/Modal";
+import Modal from "@/components/ui/Modal";
 import { toast } from "react-hot-toast";
 
 export default function SongReview() {

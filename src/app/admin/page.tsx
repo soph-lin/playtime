@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Upload from "@/components/admin/Upload";
-import SongReview from "@/components/admin/SongReview";
-import SongLibrary from "@/components/admin/SongLibrary";
-import PlaylistLibrary from "@/components/admin/PlaylistLibrary";
-import CreatePlaylistModal from "@/components/playlist/CreatePlaylistModal";
+import Upload from "./components/Upload";
+import SongReview from "./components/SongReview";
+import SongLibrary from "./components/SongLibrary";
+import PlaylistLibrary from "./components/PlaylistLibrary";
+import CreatePlaylistModal from "./components/CreatePlaylistModal";
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<"upload" | "review" | "library" | "playlists">("upload");

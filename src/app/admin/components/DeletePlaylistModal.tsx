@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Modal from "../ui/Modal";
+import Modal from "@/components/ui/Modal";
 import { Playlist } from "@prisma/client";
 
 interface DeletePlaylistModalProps {

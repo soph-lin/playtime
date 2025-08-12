@@ -2,8 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { MagnifyingGlass, Play, Pause, Spinner } from "@phosphor-icons/react";
 import { SoundCloudTrack } from "@/app/api/soundcloud/types";
 import { SoundCloudWidget } from "@/types/soundcloud";
-import SoundCloudPlayer from "../music-player/SoundCloudPlayer";
-import ProgressBar from "../music-player/ProgressBar";
+import SoundCloudPlayer from "@/components/music-player/SoundCloudPlayer";
+import ProgressBar from "@/components/music-player/ProgressBar";
 
 interface SoundCloudTrackDropdownProps {
   tracks: SoundCloudTrack[];

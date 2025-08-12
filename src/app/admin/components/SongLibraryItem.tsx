@@ -5,8 +5,8 @@ import SoundCloudTrackDropdown from "./SoundCloudTrackDropdown";
 import EditSongFieldsModal from "./EditSongFieldsModal";
 import DeleteSongModal from "./DeleteSongModal";
 import { Song } from "@prisma/client";
-import SoundCloudPlayer from "../music-player/SoundCloudPlayer";
-import LoadingSpinner from "../effects/LoadingSpinner";
+import SoundCloudPlayer from "@/components/music-player/SoundCloudPlayer";
+import LoadingSpinner from "@/components/effects/LoadingSpinner";
 import { SoundCloudWidget } from "@/types/soundcloud";
 
 interface SongLibraryProps {

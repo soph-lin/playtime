@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { Song } from "@prisma/client";
-import Modal from "../ui/Modal";
+import Modal from "@/components/ui/Modal";
 import GameSongItem from "@/app/play/components/GameSongItem";
 import { toast } from "react-hot-toast";
-import SongLibraryItem from "../admin/SongLibraryItem";
+import SongLibraryItem from "@/app/admin/components/SongLibraryItem";
 
 interface CreatePlaylistModalProps {
   isOpen: boolean;

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import SongLibraryItem from "./SongLibraryItem";
 import { Song } from "@prisma/client";
-import LoadingSpinner from "../effects/LoadingSpinner";
+import LoadingSpinner from "@/components/effects/LoadingSpinner";
 import { getAllSongs } from "@/services/songService";
 
 export default function SongLibrary() {

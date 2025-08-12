@@ -1,6 +1,6 @@
 "use client";
 
-import Modal from "../ui/Modal";
+import Modal from "@/components/ui/Modal";
 import { Song } from "@prisma/client";
 
 interface DeleteSongModalProps {

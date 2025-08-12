@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { SongCard } from "@/components/game/SongCard";
+import { SongCard } from "@/app/play/components/SongCard";
 import { Song } from "@prisma/client";
 import Dropdown from "@/components/ui/Dropdown";
 import { Button } from "@/components/ui/Button";

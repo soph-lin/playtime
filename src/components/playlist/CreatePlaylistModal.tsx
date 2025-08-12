@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Song } from "@prisma/client";
 import Modal from "../ui/Modal";
-import GameSongItem from "../game/GameSongItem";
+import GameSongItem from "@/app/play/components/GameSongItem";
 import { toast } from "react-hot-toast";
 import SongLibraryItem from "../admin/SongLibraryItem";
 

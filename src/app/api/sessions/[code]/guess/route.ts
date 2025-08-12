@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { getScoringBreakdown } from "@/utils/scoringCalculator";
+import { getScoringBreakdown } from "@/lib/scoringCalculator";
 import { PlayerAttemptsData } from "@/types/scoring";
 import type { GameSessionPlayer } from "@prisma/client";
 import { broadcastUpdate, type PusherEvent } from "@/lib/pusher";

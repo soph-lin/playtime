@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Play, Pause, Plus, MusicNote, SkipForward, SpinnerGap } from "@phosphor-icons/react";
-import RippleText from "../effects/RippleText";
-import ProgressBar from "../music-player/ProgressBar";
+import RippleText from "@/components/effects/RippleText";
+import ProgressBar from "@/components/music-player/ProgressBar";
 import { toast } from "react-hot-toast";
-import { Tooltip } from "../ui/Tooltip";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { SoundCloudWidget } from "@/types/soundcloud";
 
 // Add SC type definition

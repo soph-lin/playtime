@@ -12,9 +12,10 @@ import { Input } from "../ui/Input";
 interface CreateGameModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onGameCreated?: (sessionCode: string) => void;
 }
 
-export default function CreateGameModal({ isOpen, onClose }: CreateGameModalProps) {
+export default function CreateGameModal({ isOpen, onClose, onGameCreated }: CreateGameModalProps) {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>("");
   const [hostNickname, setHostNickname] = useState("");
@@ -77,7 +78,13 @@ export default function CreateGameModal({ isOpen, onClose }: CreateGameModalProp
         // Copy game code to clipboard
         navigator.clipboard.writeText(session.code);
         toast.success("Copied game code!");
-        onClose();
+
+        // Call the callback if provided
+        if (onGameCreated) {
+          onGameCreated(session.code);
+        } else {
+          onClose();
+        }
       }
     } catch (error) {
       console.error("Error creating game:", error);

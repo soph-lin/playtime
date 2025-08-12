@@ -16,11 +16,6 @@ interface GameState {
   joinGame: (code: string, nickname: string) => Promise<void>;
   leaveGame: (sessionId: string, playerId: string) => Promise<void>;
   startGame: () => Promise<void>;
-  setSession: (session: GameState["session"]) => void;
-
-  // Screen management
-  currentScreen: "menu" | "lobby" | "game" | "leaderboard";
-  setScreen: (screen: "menu" | "lobby" | "game" | "leaderboard") => void;
 }
 
 const useGameStore = create<GameState>()(
@@ -28,7 +23,6 @@ const useGameStore = create<GameState>()(
     (set, get) => ({
       // Initial state
       session: null,
-      currentScreen: "menu",
 
       // Actions
       createGame: async (playlistId: string, hostNickname: string) => {
@@ -46,7 +40,7 @@ const useGameStore = create<GameState>()(
           }
 
           const session = await response.json();
-          set({ session, currentScreen: "lobby" });
+          set({ session });
           return session;
         } catch (error) {
           console.error("Error creating game:", error);
@@ -69,7 +63,7 @@ const useGameStore = create<GameState>()(
           }
 
           const session = await response.json();
-          set({ session, currentScreen: "lobby" });
+          set({ session });
         } catch (error) {
           console.error("Error joining game:", error);
           throw error;
@@ -124,20 +118,16 @@ const useGameStore = create<GameState>()(
           }
 
           const updatedSession = await response.json();
-          set({ session: updatedSession, currentScreen: "game" });
+          set({ session: updatedSession });
         } catch (error) {
           console.error("Error starting game:", error);
           throw error;
         }
       },
-
-      setSession: (session) => set({ session }),
-
-      setScreen: (screen) => set({ currentScreen: screen }),
     }),
     {
       name: "game-storage",
-      partialize: (state) => ({ currentScreen: state.currentScreen }),
+      partialize: (state) => ({ session: state.session }),
     }
   )
 );

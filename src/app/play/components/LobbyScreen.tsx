@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "../ui/Button";
-import { Input } from "../ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import useGameStore from "@/stores/gameStore";
 import { Copy, Play, SignOut } from "@phosphor-icons/react";
 import { useState } from "react";
@@ -12,7 +12,6 @@ import { usePusher } from "@/hooks/usePusher";
 export default function LobbyScreen() {
   const session = useGameStore((state) => state.session);
   const leaveGame = useGameStore((state) => state.leaveGame);
-  const setScreen = useGameStore((state) => state.setScreen);
   const startGame = useGameStore((state) => state.startGame);
   const joinGame = useGameStore((state) => state.joinGame);
 
@@ -93,7 +92,8 @@ export default function LobbyScreen() {
       }
 
       await leaveGame(session.id, currentPlayer.id);
-      setScreen("menu");
+      // Redirect back to home instead of setting screen
+      window.location.href = "/";
     } catch (error) {
       console.error("Error leaving game:", error);
       toast.error("Failed to leave game");

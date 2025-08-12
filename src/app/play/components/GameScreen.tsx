@@ -18,7 +18,7 @@ interface PlaylistWithSongs extends Playlist {
 
 export default function GameScreen() {
   const session = useGameStore((state) => state.session);
-  const setScreen = useGameStore((state) => state.setScreen);
+
   const leaveGame = useGameStore((state) => state.leaveGame);
   const [isLeaving, setIsLeaving] = useState(false);
   const { user } = useUser();
@@ -38,7 +38,6 @@ export default function GameScreen() {
   // Listen for game start event
   usePusher(`session-${session?.id}`, "gameStarted", () => {
     toast.success("Game started!");
-    setScreen("game");
   });
 
   useEffect(() => {
@@ -54,7 +53,7 @@ export default function GameScreen() {
       await new Promise((resolve) => setTimeout(resolve, 100));
       await leaveGame(session.id, session.players[0].id);
       toast.success("Left the game");
-      setScreen("menu");
+      window.location.href = "/";
     } catch (error) {
       console.error("Error leaving game:", error);
       toast.error("Failed to leave game");
@@ -77,7 +76,7 @@ export default function GameScreen() {
 
     if (availableSongs.length === 0) {
       toast.success("You've completed all songs in the playlist!");
-      setScreen("menu");
+      window.location.href = "/";
       return;
     }
 

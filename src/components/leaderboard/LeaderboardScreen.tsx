@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import useGameStore from "@/stores/gameStore";
 import { Button } from "@/components/ui/Button";
 import { ArrowLeft, Trophy, Clock, Target } from "@phosphor-icons/react";
 
@@ -15,7 +14,6 @@ interface LeaderboardPlayer {
 }
 
 export default function LeaderboardScreen() {
-  const setScreen = useGameStore((state) => state.setScreen);
   const [players, setPlayers] = useState<LeaderboardPlayer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -39,7 +37,7 @@ export default function LeaderboardScreen() {
   }, []);
 
   const handleBack = () => {
-    setScreen("menu");
+    window.location.href = "/";
   };
 
   if (isLoading) {

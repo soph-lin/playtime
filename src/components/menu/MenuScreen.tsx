@@ -7,7 +7,6 @@ import StartGameModal from "@/components/menu/StartGameModal";
 import ScrollingBackground from "@/components/background/ScrollingBackground";
 import { Canvas } from "@react-three/fiber";
 import FlatRecord from "@/components/3d/FlatRecord";
-import useGameStore from "@/stores/gameStore";
 import { SignInButton } from "@/components/profile/SignInButton";
 import { useUser, useClerk } from "@clerk/nextjs";
 
@@ -17,10 +16,9 @@ export default function MenuScreen() {
   const [selectedOption, setSelectedOption] = useState<string>("Start Game");
   const [showSidePanel, setShowSidePanel] = useState<boolean>(false);
   const [showStartGameModal, setShowStartGameModal] = useState<boolean>(false);
-  const setScreen = useGameStore((state) => state.setScreen);
 
   // Create menu options based on authentication status
-  const baseMenuOptions = ["Start Game", "Leaderboard", "How to Play", "Settings"];
+  const baseMenuOptions = ["Start Game", "How to Play", "Settings"];
   const menuOptions = isLoaded && user ? [...baseMenuOptions, "Sign Out"] : baseMenuOptions;
 
   const getContentForOption = (option: string) => {
@@ -78,8 +76,6 @@ export default function MenuScreen() {
     setSelectedOption(option);
     if (option === "Start Game") {
       setShowStartGameModal(true);
-    } else if (option === "Leaderboard") {
-      setScreen("leaderboard");
     } else if (option === "Sign Out") {
       // Automatically sign out the user
       signOut();

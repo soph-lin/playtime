@@ -1,5 +1,5 @@
 import prisma from "@/lib/db";
-import { calculateSongPoints, calculateCompletionBonuses, calculateTotalPoints } from "@/utils/scoringCalculator";
+import { calculateSongPoints, calculateCompletionBonuses, calculateTotalPoints } from "@/lib/scoringCalculator";
 import { PlayerAttemptsData } from "@/types/scoring";
 import { Prisma } from "@prisma/client";
 

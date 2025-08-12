@@ -1,5 +1,7 @@
-import GameClient from "../components/GameClient";
+"use client";
+
+import MenuScreen from "@/components/menu/MenuScreen";
 
 export default function Home() {
-  return <GameClient />;
+  return <MenuScreen />;
 }

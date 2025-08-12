@@ -2,8 +2,8 @@
 
 import { useRef, useState, useEffect } from "react";
 import { Check } from "@phosphor-icons/react";
-import Modal from "../ui/Modal";
-import Dropdown from "../ui/Dropdown";
+import Modal from "@/components/ui/Modal";
+import Dropdown from "@/components/ui/Dropdown";
 import { Song } from "@prisma/client";
 
 interface GuessModalProps {

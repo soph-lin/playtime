@@ -4,6 +4,7 @@ import { Button } from "../ui/Button";
 import { MicrophoneStage, Headphones } from "@phosphor-icons/react";
 import CreateGameModal from "./CreateGameModal";
 import JoinGameModal from "./JoinGameModal";
+
 interface StartGameModalProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
@@ -42,6 +43,13 @@ export default function StartGameModal({ isOpen, setIsOpen }: StartGameModalProp
     setIsJoinGameModalOpen(true);
   };
 
+  const handleGameCreated = (sessionCode: string) => {
+    // Close all modals and redirect to the game
+    setIsOpen(false);
+    setIsCreateGameModalOpen(false);
+    window.location.href = `/play/${sessionCode}`;
+  };
+
   return (
     <>
       <Modal
@@ -74,7 +82,11 @@ export default function StartGameModal({ isOpen, setIsOpen }: StartGameModalProp
           </Button>
         </div>
       </Modal>
-      <CreateGameModal isOpen={isCreateGameModalOpen} onClose={handleCloseCreateGameModal} />
+      <CreateGameModal
+        isOpen={isCreateGameModalOpen}
+        onClose={handleCloseCreateGameModal}
+        onGameCreated={handleGameCreated}
+      />
       <JoinGameModal isOpen={isJoinGameModalOpen} onClose={handleCloseJoinGameModal} />
     </>
   );

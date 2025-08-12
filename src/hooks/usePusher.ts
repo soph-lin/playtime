@@ -9,28 +9,14 @@ export const usePusher = (
 ) => {
   const channelRef = useRef<ReturnType<typeof pusherClient.subscribe> | null>(null);
   const session = useGameStore((state) => state.session);
-  const setSession = useGameStore((state) => state.setSession);
 
-  // Create a stable callback that includes the session update logic
+  // Create a stable callback that just calls the provided callback
   const stableCallback = useCallback(
     (data: Record<string, unknown>) => {
       // Call the provided callback for notifications
       callback(data);
-
-      // Update session state based on event type
-      if (eventType === "playerJoined" || eventType === "playerLeft") {
-        // Fetch updated session data
-        fetch(`/api/sessions/${session?.code}`)
-          .then((res) => res.json())
-          .then((updatedSession) => {
-            setSession(updatedSession);
-          })
-          .catch((error) => {
-            console.error("Error fetching updated session:", error);
-          });
-      }
     },
-    [callback, eventType, session?.code, setSession]
+    [callback]
   );
 
   useEffect(() => {

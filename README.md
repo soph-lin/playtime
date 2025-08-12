@@ -1,16 +1,12 @@
 # Playtime
 
-## Overview
-
 **Playtime** is a web-based multiplayer game where players compete asynchronously to guess song titles as quickly as possible. The game features interactive 3D visuals, a cumulative leaderboard, and the ability to create and share custom playlists. It integrates with the SoundCloud API to fetch and play songs.
-
-This originally began as a class project for Software Design Lab, and I thought it would be fun to continue it as an independent project. So here you go!
 
 ---
 
-## Features
+# Features
 
-### Core Features
+## Core Features
 
 1. **Guess the Song**: Players listen to short audio clips and guess the song title. They are awarded more points for guessing faster and the first person to guess correctly wins the points.
 2. **Leaderboard**: Tracks player performance, including total points, average time, and games won.
@@ -19,7 +15,7 @@ This originally began as a class project for Software Design Lab, and I thought 
 5. **Game Modes**: Players can select genres, artists, or playlists to customize their game experience.
 6. **Statistics**: Players can view past game statistics and achievements.
 
-### Additional Features
+## Additional Features
 
 - **Dynamic Difficulty**: Adjust game difficulty and round settings.
 - **Social Sharing**: Invite friends to play via shareable links.
@@ -27,16 +23,16 @@ This originally began as a class project for Software Design Lab, and I thought 
 
 ---
 
-## Tech Stack
+# Tech Stack
 
-### **Frontend**
+## **Frontend**
 
 - **Framework**: React.js with TypeScript
 - **Styling**: TailwindCSS
 - **3D Visuals**: Three.js with React Three Fiber and Drei
 - **UI Components**: Radix UI, Phosphor Icons
 
-### **Backend**
+## **Backend**
 
 - **Framework**: Node.js with Next.js
 - **Authentication**: JSON Web Tokens (JWT)
@@ -44,19 +40,19 @@ This originally began as a class project for Software Design Lab, and I thought 
 - **Data Validation**: Zod
 - **ORM**: Prisma
 
-### **Database**
+## **Database**
 
 - **Database**: PostgreSQL
 - **Schema Management**: Prisma ORM
 
 ---
 
-## Project Structure
+# Project Structure
 
-### Directory Layout
+## Directory Layout
 
 ```
-cs222/
+playtime/
 ├── prisma/ # Prisma schema and seed files
 ├── public/ # Static assets
 ├── src/
@@ -78,133 +74,119 @@ cs222/
 
 ---
 
-## Key Components
+# Development
 
-### **Frontend Components**
+## Getting Started
 
-1. **3D Visuals**
-   - `CanvasWrapper`: Sets up the Three.js canvas.
-   - `TitleScene`: Combines 3D elements like the title, music notes, and record.
-   - `MusicNotes`: Animated floating music notes.
-   - `Record`: Rotating record with grooves and a label.
+The below guide is if you want to set up the website locally. Otherwise, go to [https://playtime.sophli.in/](https://playtime.sophli.in/).
 
-2. **UI Components**
-   - `Button`: Customizable button component.
-   - `Dropdown`: Searchable dropdown for selecting songs.
-   - `Input`: Styled input field.
-   - `Popover`: Popover component for additional UI interactions.
+### Install pnpm package manager
 
-3. **Game Components**
-   - `SongCard`: Displays the song player and handles playback controls.
-   - `DevPage`: Development page for testing the game logic.
+`pnpm` is a package manager built on top of `npm` and is much faster than `npm`, being highly disk efficient and solving inherent issues in `npm`.
 
-### **Backend API**
+Install `pnpm` if you don't already have it:
 
-1. **SoundCloud API Integration**
-   - `/api/soundcloud/search`: Fetches tracks from SoundCloud based on a query.
-   - `/api/soundcloud`: Handles track search and retrieval.
+```
+npm install -g pnpm
+```
 
-2. **Playlists API**
-   - `/api/playlists`: CRUD operations for playlists.
-   - `/api/playlists/[playlistId]`: Manage tracks within a specific playlist.
+**Optional: set up a shorter alias like pn instead**
 
-3. **Database Management**
-   - Prisma ORM is used to manage the PostgreSQL database schema and queries.
+For POSIX systems, add the following to your .bashrc, .zshrc, or config.fish:
 
-## Scripts
+`alias pn=pnpm`
 
-### **Database Management**
+For Powershell (Windows), go to a Powershell window with admin rights and run:
+
+`notepad $profile.AllUsersAllHosts`
+
+In the profile.ps1 file that opens, put:
+
+`set-alias -name pn -value pnpm`
+
+Now whenever you have to run a `pnpm` cmd, you can type in `pn` (or whatever alias you created) instead.
+
+### Configure Clerk
+
+Sign in or create an account on Clerk.
+
+Create an application.
+
+Create a webhook to allow for user creation:
+
+1. Endpoint URL: <YOUR_DEVELOPMENT_DOMAIN>/api/webhooks/clerk
+
+- In local development, `YOUR_DEVELOPMENT_DOMAIN` cannot be an `http` URL like `http://localhost:3000`. You will need to configure an `ngrok` server.
+
+2. Subscribe to events:
+
+- user.created
+- user.updated
+- email.created
+- email.updated
+
+Keep this tab open since you will need to add the necessary environment variables to `.env` later.
+
+### Install
+
+Clone the repository and go into the directory:
+
+```
+git clone https://github.com/careerday23/prototype.git
+
+cd prototype
+```
+
+Install packages:
+
+```
+pnpm i
+```
+
+Create `.env` file and configure variables:
+
+```
+# Database
+DATABASE_URL=<...>
+DIRECT_URL=<...>
+
+# Song API
+SOUNDCLOUD_CLIENT_ID=<...>
+SOUNDCLOUD_CLIENT_SECRET=<...>
+SPOTIFY_CLIENT_ID=<...>
+SPOTIFY_CLIENT_SECRET=<...>
+
+# Pusher
+PUSHER_APP_ID=<...>
+NEXT_PUBLIC_PUSHER_APP_KEY=<...>
+PUSHER_APP_SECRET=<...>
+NEXT_PUBLIC_PUSHER_CLUSTER=<...>
+
+# Clerk
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=<...>
+CLERK_SECRET_KEY=<...>
+CLERK_WEBHOOK_SECRET=<...>
+```
+
+Run the development server:
+
+```
+pnpm dev
+```
+
+## Package Scripts
+
+**Database Management**
 
 - **`prisma`**: Pulls the database schema and generates the Prisma client.
 - **`build-db`**: Populates the database with tracks from SoundCloud.
 
-### **Development**
+**Development**
 
 - **`dev`**: Starts the Next.js development server.
 - **`lint`**: Runs ESLint to check for code quality issues.
 - **`format`**: Formats the codebase using Prettier.
 
----
-
-## Environment Variables
-
-### **Required Variables**
-
-- **`SOUNDCLOUD_CLIENT_ID`**: SoundCloud API client ID.
-- **`SOUNDCLOUD_CLIENT_SECRET`**: SoundCloud API client secret.
-- **`DATABASE_URL`**: PostgreSQL database connection string.
-
-### **Optional Variables**
-
-- **`DIRECT_URL`**: Direct database connection URL for Prisma.
-
----
-
-## Deployment
-
-### **Local Development**
-
-1. Clone the repository:
-
-```bash
-   git clone <repository-url>
-   cd cs222
-```
-
-2. Set up environment variables in .env.local.
-
-```bash
-  .env.local
-```
-
-3. Install dependencies:
-
-```bash
-  pnpm install
-```
-
-4. Start the development server:
-
-```bash
-  pnpm run dev
-```
-
-### **Production**
-
-1. Build the project:
-
-```bash
-  pnpm run build
-```
-
-2. Start the production server:
-
-```bash
-  pnpm run start
-```
-
-## Testing
-
-### **Linting**
-
-Run ESLint to check for code quality issues:
-
-```bash
-pnpm run lint
-```
-
-### **Formatting**
-
-Check code formatting with Prettier:
-
-```bash
-pnpm run format:check
-```
-
-## Unit Tests
-
-Add unit tests using Jest and React Testing Library to ensure the functionality and reliability of the application.
-
-## License
+# License
 
 This project is licensed under the MIT License.

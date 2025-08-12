@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
 import CreateDialogueModal from "./CreateDialogueModal";
 import { getCharacterIcon } from "@/constants/characterInformation";
 import { Play, Pause, PencilSimple, Spinner, X } from "@phosphor-icons/react";
@@ -685,21 +686,19 @@ export default function DialogueEditor() {
                                 onChange={(e) => updateNodeData(node.id, "text", e.target.value)}
                                 onKeyDown={(e) => handleTabNavigation(e, node.id)}
                               />
-                              <select
-                                ref={(el) => {
-                                  inputRefs.current[`${node.id}_expression`] = el;
-                                }}
+                              <Select
                                 value={editingTree.nodes.find((n) => n.id === node.id)?.data.expression || "neutral"}
-                                onChange={(e) => updateNodeData(node.id, "expression", e.target.value)}
-                                onKeyDown={(e) => handleTabNavigation(e, node.id)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                              >
-                                <option value="happy">Happy</option>
-                                <option value="sad">Sad</option>
-                                <option value="nervous">Nervous</option>
-                                <option value="angry">Angry</option>
-                                <option value="neutral">Neutral</option>
-                              </select>
+                                onChange={(value) => updateNodeData(node.id, "expression", value)}
+                                options={[
+                                  { value: "happy", label: "Happy" },
+                                  { value: "sad", label: "Sad" },
+                                  { value: "nervous", label: "Nervous" },
+                                  { value: "angry", label: "Angry" },
+                                  { value: "neutral", label: "Neutral" },
+                                ]}
+                                placeholder="Select expression"
+                                searchable={true}
+                              />
                             </>
                           ) : (
                             <>

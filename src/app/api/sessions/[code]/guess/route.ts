@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { broadcastUpdate, PusherEvent } from "@/lib/pusher";
 import { getScoringBreakdown } from "@/utils/scoringCalculator";
 import { PlayerAttemptsData } from "@/types/scoring";
+import type { GameSessionPlayer } from "@prisma/client";
+import { broadcastUpdate, type PusherEvent } from "@/lib/pusher";
+import { Prisma } from "@prisma/client";
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get or create scoring state for the player (using type assertion for new fields)
-    const playerData = currentPlayer as any;
+    const playerData = currentPlayer as GameSessionPlayer & { attempts?: PlayerAttemptsData };
     const attempts: PlayerAttemptsData = playerData.attempts || {};
     let totalPoints = currentPlayer.score || 0;
     let songsCompleted = currentPlayer.correct || 0;
@@ -71,24 +73,24 @@ export async function POST(req: NextRequest) {
 
     if (correct) {
       const timeSeconds = (currentTime - attempts[songId].startTime) / 1000;
-      
+
       scoringBreakdown = getScoringBreakdown(attempts[songId].attempts, timeSeconds, true);
       points = scoringBreakdown.totalPoints;
       attemptBonus = scoringBreakdown.attemptBonus;
       timeBonus = scoringBreakdown.timeBonus;
-      
+
       totalPoints += points;
       songsCompleted += 1;
     }
 
     // Update player's score in database (using type assertion for new fields)
-    await (prisma.gameSessionPlayer.update as any)({
+    await prisma.gameSessionPlayer.update({
       where: { id: playerId },
       data: {
         score: totalPoints,
         correct: songsCompleted,
         totalGuesses,
-        attempts: attempts,
+        attempts: attempts as unknown as Prisma.InputJsonValue, // Safe type assertion for JSON field
       },
     });
 
@@ -97,14 +99,14 @@ export async function POST(req: NextRequest) {
     const playerCompleted = songsCompleted >= totalSongs;
 
     // Check if any player has completed the game
-    const gameCompleted = session.players.some((p) => (p.correct || 0) >= totalSongs);
+    const gameCompleted = session.players.some((p: GameSessionPlayer) => (p.correct || 0) >= totalSongs);
 
     // Determine if this player is first to finish (multiplayer only)
     let firstToFinish: boolean | null = null;
     if (session.players.length > 1 && playerCompleted && gameCompleted) {
       // Check if any other player completed before this one
-      const otherPlayersCompleted = session.players.some((p) => 
-        p.id !== playerId && (p.correct || 0) >= totalSongs
+      const otherPlayersCompleted = session.players.some(
+        (p: GameSessionPlayer) => p.id !== playerId && (p.correct || 0) >= totalSongs
       );
       firstToFinish = !otherPlayersCompleted;
     }
@@ -123,7 +125,7 @@ export async function POST(req: NextRequest) {
       broadcastUpdate(`session-${session.id}`, {
         type: "roundUpdate",
         data: {
-          players: session.players.map((p) => ({
+          players: session.players.map((p: GameSessionPlayer) => ({
             id: p.id,
             nickname: p.nickname,
             score: p.score,
@@ -153,7 +155,7 @@ export async function POST(req: NextRequest) {
       },
     } as PusherEvent);
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       points,
       attemptBonus,

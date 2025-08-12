@@ -7,19 +7,19 @@ export const SCORING_CONSTANTS = {
 
   // Attempt-based bonus points (0-50 total)
   ATTEMPT_BONUSES: {
-    FIRST_ATTEMPT: 50,   // Perfect accuracy
-    SECOND_ATTEMPT: 25,  // Good accuracy
-    THIRD_ATTEMPT: 10,   // Acceptable accuracy
-    FOURTH_PLUS: 0,      // No accuracy bonus
+    FIRST_ATTEMPT: 50, // Perfect accuracy
+    SECOND_ATTEMPT: 25, // Good accuracy
+    THIRD_ATTEMPT: 10, // Acceptable accuracy
+    FOURTH_PLUS: 0, // No accuracy bonus
   },
 
   // Time-based bonus points (0-25 total)
   TIME_BONUSES: {
-    LIGHTNING_FAST: 25,  // 0-5 seconds
-    VERY_FAST: 15,       // 6-15 seconds
-    FAST: 10,            // 16-30 seconds
-    MODERATE: 5,         // 31-60 seconds
-    SLOW: 0,             // 60+ seconds
+    LIGHTNING_FAST: 25, // 0-5 seconds
+    VERY_FAST: 15, // 6-15 seconds
+    FAST: 10, // 16-30 seconds
+    MODERATE: 5, // 31-60 seconds
+    SLOW: 0, // 60+ seconds
   },
 
   // Time thresholds for bonuses (in seconds)
@@ -32,8 +32,8 @@ export const SCORING_CONSTANTS = {
 
   // Completion bonuses
   COMPLETION_BONUSES: {
-    PERFECT_GAME: 200,   // All songs correct
-    SPEED_RUN: 100,      // Complete under 5 minutes
+    PERFECT_GAME: 200, // All songs correct
+    SPEED_RUN: 100, // Complete under 5 minutes
     FIRST_TO_FINISH: 150, // First player to complete (multiplayer)
   },
 
@@ -65,10 +65,10 @@ export const XP_CONSTANTS = {
 
   // Level multipliers for XP
   LEVEL_MULTIPLIERS: {
-    BEGINNER: 1.0,    // Level 1-10
+    BEGINNER: 1.0, // Level 1-10
     INTERMEDIATE: 1.1, // Level 11-25
-    ADVANCED: 1.2,    // Level 26-50
-    EXPERT: 1.5,      // Level 51+
+    ADVANCED: 1.2, // Level 26-50
+    EXPERT: 1.5, // Level 51+
   },
 
   // Level thresholds

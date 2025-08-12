@@ -1,5 +1,5 @@
-import { SCORING_CONSTANTS, XP_CONSTANTS, getLevelMultiplier } from '@/constants/scoring';
-import { SongScoringBreakdown, CompletionBonuses } from '@/types/scoring';
+import { SCORING_CONSTANTS, XP_CONSTANTS, getLevelMultiplier } from "@/constants/scoring";
+import { SongScoringBreakdown, CompletionBonuses } from "@/types/scoring";
 
 /**
  * Calculate points for a single song based on attempts and time
@@ -44,7 +44,12 @@ function calculateTimeBonus(timeSeconds: number): number {
 /**
  * Calculate experience points for a single song
  */
-export function calculateSongXP(attempts: number, timeSeconds: number, isCorrect: boolean, playerLevel: number): number {
+export function calculateSongXP(
+  attempts: number,
+  timeSeconds: number,
+  isCorrect: boolean,
+  playerLevel: number
+): number {
   if (!isCorrect) return 0;
 
   const baseXP = XP_CONSTANTS.BASE_XP_PER_SONG;
@@ -93,7 +98,8 @@ export function calculateCompletionBonuses(
   isFirstToFinish: boolean | null
 ): CompletionBonuses {
   const perfectGame = songsCompleted === totalSongs ? SCORING_CONSTANTS.COMPLETION_BONUSES.PERFECT_GAME : 0;
-  const speedRun = completionTime <= SCORING_CONSTANTS.SPEED_RUN_THRESHOLD ? SCORING_CONSTANTS.COMPLETION_BONUSES.SPEED_RUN : 0;
+  const speedRun =
+    completionTime <= SCORING_CONSTANTS.SPEED_RUN_THRESHOLD ? SCORING_CONSTANTS.COMPLETION_BONUSES.SPEED_RUN : 0;
   // Only award firstToFinish bonus if it's a multiplayer game and player was first
   const firstToFinish = isFirstToFinish === true ? SCORING_CONSTANTS.COMPLETION_BONUSES.FIRST_TO_FINISH : 0;
 
@@ -103,29 +109,22 @@ export function calculateCompletionBonuses(
 /**
  * Calculate total points including completion bonuses
  */
-export function calculateTotalPoints(
-  songPoints: number,
-  completionBonuses: CompletionBonuses
-): number {
+export function calculateTotalPoints(songPoints: number, completionBonuses: CompletionBonuses): number {
   return songPoints + completionBonuses.perfectGame + completionBonuses.speedRun + completionBonuses.firstToFinish;
 }
 
 /**
  * Get scoring breakdown for display purposes
  */
-export function getScoringBreakdown(
-  attempts: number,
-  timeSeconds: number,
-  isCorrect: boolean
-): SongScoringBreakdown {
+export function getScoringBreakdown(attempts: number, timeSeconds: number, isCorrect: boolean): SongScoringBreakdown {
   if (!isCorrect) {
     return {
       basePoints: 0,
       attemptBonus: 0,
       timeBonus: 0,
       totalPoints: 0,
-      attemptBonusLabel: 'Incorrect',
-      timeBonusLabel: 'Incorrect',
+      attemptBonusLabel: "Incorrect",
+      timeBonusLabel: "Incorrect",
     };
   }
 
@@ -151,19 +150,19 @@ export function getScoringBreakdown(
  * Get human-readable label for attempt bonus
  */
 function getAttemptBonusLabel(attempts: number): string {
-  if (attempts === 1) return 'Perfect Accuracy';
-  if (attempts === 2) return 'Good Accuracy';
-  if (attempts === 3) return 'Acceptable Accuracy';
-  return 'No Accuracy Bonus';
+  if (attempts === 1) return "Perfect Accuracy";
+  if (attempts === 2) return "Good Accuracy";
+  if (attempts === 3) return "Acceptable Accuracy";
+  return "No Accuracy Bonus";
 }
 
 /**
  * Get human-readable label for time bonus
  */
 function getTimeBonusLabel(timeSeconds: number): string {
-  if (timeSeconds <= SCORING_CONSTANTS.TIME_THRESHOLDS.LIGHTNING_FAST) return 'Lightning Fast';
-  if (timeSeconds <= SCORING_CONSTANTS.TIME_THRESHOLDS.VERY_FAST) return 'Very Fast';
-  if (timeSeconds <= SCORING_CONSTANTS.TIME_THRESHOLDS.FAST) return 'Fast';
-  if (timeSeconds <= SCORING_CONSTANTS.TIME_THRESHOLDS.MODERATE) return 'Moderate';
-  return 'No Time Bonus';
+  if (timeSeconds <= SCORING_CONSTANTS.TIME_THRESHOLDS.LIGHTNING_FAST) return "Lightning Fast";
+  if (timeSeconds <= SCORING_CONSTANTS.TIME_THRESHOLDS.VERY_FAST) return "Very Fast";
+  if (timeSeconds <= SCORING_CONSTANTS.TIME_THRESHOLDS.FAST) return "Fast";
+  if (timeSeconds <= SCORING_CONSTANTS.TIME_THRESHOLDS.MODERATE) return "Moderate";
+  return "No Time Bonus";
 }

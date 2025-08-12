@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -12,28 +12,66 @@ interface DialogueOption {
   targetNodeId: string;
 }
 
-interface DialogueNodeData {
-  text?: string;
-  expression?: string;
-  options?: DialogueOption[];
-  autoAdvance?: boolean;
-  [key: string]: unknown;
-}
-
 interface DialogueNodeProps {
   node: {
     id: string;
-    type: string;
+    type: "DIALOGUE";
     name: string;
     position: { x: number; y: number };
-    data: DialogueNodeData;
+    data: {
+      text?: string;
+      expression?: string;
+      options?: Array<{
+        id: string;
+        text: string;
+        targetNodeId: string;
+      }>;
+      autoAdvance?: boolean;
+      [key: string]: unknown;
+    };
   };
   index: number;
   isEditing: boolean;
   isSelected: boolean;
   isDragging: boolean;
-  editingTree: any;
-  selectedTree: any;
+  editingTree: {
+    id: string;
+    title: string;
+    characterName: string;
+    nodes: Array<{
+      id: string;
+      type: "DIALOGUE";
+      name: string;
+      position: { x: number; y: number };
+      data: Record<string, unknown>;
+    }>;
+    connections: Array<{
+      id: string;
+      fromNodeId: string;
+      toNodeId: string;
+      [key: string]: unknown;
+    }>;
+    metadata: Record<string, unknown>;
+  } | null;
+  selectedTree: {
+    id: string;
+    title: string;
+    characterName: string;
+    nodes: Array<{
+      id: string;
+      type: "DIALOGUE";
+      name: string;
+      position: { x: number; y: number };
+      data: Record<string, unknown>;
+    }>;
+    connections: Array<{
+      id: string;
+      fromNodeId: string;
+      toNodeId: string;
+      [key: string]: unknown;
+    }>;
+    metadata: Record<string, unknown>;
+  } | null;
   onNodeSelect: (nodeId: string) => void;
   onDragStart: (e: React.DragEvent, nodeId: string) => void;
   onDragOver: (e: React.DragEvent) => void;
@@ -41,7 +79,6 @@ interface DialogueNodeProps {
   onDeleteNode: (nodeId: string) => void;
   onUpdateNodeData: (nodeId: string, field: string, value: string) => void;
   onUpdateNodeName: (nodeId: string, name: string) => void;
-  onChangeNodeType: (nodeId: string, newType: "DIALOGUE") => void;
   onAddOption: (nodeId: string) => void;
   onUpdateOptionText: (nodeId: string, optionId: string, text: string) => void;
   onUpdateOptionTarget: (nodeId: string, optionId: string, targetNodeId: string) => void;
@@ -55,7 +92,6 @@ interface DialogueNodeProps {
 
 export default function DialogueNode({
   node,
-  index,
   isEditing,
   isSelected,
   isDragging,
@@ -68,7 +104,6 @@ export default function DialogueNode({
   onDeleteNode,
   onUpdateNodeData,
   onUpdateNodeName,
-  onChangeNodeType,
   onAddOption,
   onUpdateOptionText,
   onUpdateOptionTarget,
@@ -79,12 +114,11 @@ export default function DialogueNode({
   inputRefs,
   onTabNavigation,
 }: DialogueNodeProps) {
-  const [isHovered, setIsHovered] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editingName, setEditingName] = useState(node.name);
 
-  const handleMouseEnter = () => setIsHovered(true);
-  const handleMouseLeave = () => setIsHovered(false);
+  const handleMouseEnter = () => {};
+  const handleMouseLeave = () => {};
 
   const handleNameClick = () => {
     if (isEditing) {
@@ -181,7 +215,7 @@ export default function DialogueNode({
                 inputRefs.current[`${node.id}_text`] = el;
               }}
               placeholder="Enter dialogue text..."
-              value={editingTree.nodes.find((n: any) => n.id === node.id)?.data.text || ""}
+              value={(editingTree?.nodes.find((n) => n.id === node.id)?.data.text as string) || ""}
               onChange={(e) => onUpdateNodeData(node.id, "text", e.target.value)}
               onKeyDown={(e) => onTabNavigation(e, node.id)}
             />
@@ -192,7 +226,7 @@ export default function DialogueNode({
           {/* Expression Selector */}
           {isEditing && (
             <Select
-              value={editingTree.nodes.find((n: any) => n.id === node.id)?.data.expression || "neutral"}
+              value={(editingTree?.nodes.find((n) => n.id === node.id)?.data.expression as string) || "neutral"}
               onChange={(value) => onUpdateNodeData(node.id, "expression", value)}
               options={[
                 { value: "happy", label: "Happy" },
@@ -215,7 +249,7 @@ export default function DialogueNode({
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
-                    checked={editingTree.nodes.find((n: any) => n.id === node.id)?.data.autoAdvance || false}
+                    checked={(editingTree?.nodes.find((n) => n.id === node.id)?.data.autoAdvance as boolean) || false}
                     onChange={() => onToggleAutoAdvance(node.id)}
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
@@ -225,62 +259,65 @@ export default function DialogueNode({
             )}
 
             {/* Options List */}
-            {(isEditing ? editingTree.nodes.find((n: any) => n.id === node.id)?.data.options : node.data.options)?.map(
-              (option: DialogueOption, optionIndex: number) => (
-                <div key={option.id} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                  <span className="text-xs text-gray-500 w-6">{optionIndex + 1}</span>
-                  {isEditing ? (
-                    <>
-                      <Input
-                        placeholder="Option text..."
-                        value={option.text}
-                        onChange={(e) => onUpdateOptionText(node.id, option.id, e.target.value)}
-                        className="flex-1"
-                      />
-                      <Select
-                        value={option.targetNodeId}
-                        onChange={(value) => {
-                          if (value === "new") {
-                            const newNodeId = onAddNewNode();
-                            onUpdateOptionTarget(node.id, option.id, newNodeId);
-                          } else {
-                            onUpdateOptionTarget(node.id, option.id, value);
-                          }
-                        }}
-                        options={[
-                          ...editingTree.nodes
-                            .filter((n: any) => n.id !== node.id && n.type === "DIALOGUE")
-                            .map((n: any) => ({
-                              value: n.id,
-                              label: `${n.data.text?.substring(0, 30)}...`,
-                            })),
-                          { value: "new", label: "+ Create new node" },
-                        ]}
-                        placeholder="Target node"
-                        searchable={true}
-                      />
-                      <button
-                        onClick={() => onDeleteOption(node.id, option.id)}
-                        className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
-                        title="Delete option"
-                      >
-                        <X size={16} />
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <span className="flex-1 text-gray-700">{option.text}</span>
-                      <span className="text-gray-600">
-                        →{" "}
-                        {selectedTree?.nodes
-                          .find((n: any) => n.id === option.targetNodeId)
-                          ?.data.text?.substring(0, 30) || "No target"}
-                      </span>
-                    </>
-                  )}
-                </div>
-              )
-            ) || []}
+            {(isEditing
+              ? (editingTree?.nodes.find((n) => n.id === node.id)?.data.options as Array<{
+                  id: string;
+                  text: string;
+                  targetNodeId: string;
+                }>)
+              : node.data.options
+            )?.map((option: DialogueOption, optionIndex: number) => (
+              <div key={option.id} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                <span className="text-xs text-gray-500 w-6">{optionIndex + 1}</span>
+                {isEditing ? (
+                  <>
+                    <Input
+                      placeholder="Option text..."
+                      value={option.text}
+                      onChange={(e) => onUpdateOptionText(node.id, option.id, e.target.value)}
+                      className="flex-1"
+                    />
+                    <Select
+                      value={option.targetNodeId}
+                      onChange={(value) => {
+                        if (value === "new") {
+                          const newNodeId = onAddNewNode();
+                          onUpdateOptionTarget(node.id, option.id, newNodeId);
+                        } else {
+                          onUpdateOptionTarget(node.id, option.id, value);
+                        }
+                      }}
+                      options={[
+                        ...(editingTree?.nodes
+                          .filter((n) => n.id !== node.id && n.type === "DIALOGUE")
+                          .map((n) => ({
+                            value: n.id,
+                            label: n.name,
+                          })) || []),
+                      ]}
+                      placeholder="Target node"
+                      searchable={true}
+                    />
+                    <button
+                      onClick={() => onDeleteOption(node.id, option.id)}
+                      className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                      title="Delete option"
+                    >
+                      <X size={16} />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex-1 text-gray-700">{option.text}</span>
+                    <span className="text-gray-600">
+                      →{" "}
+                      {(selectedTree?.nodes.find((n) => n.id === option.targetNodeId)?.data.text as string) ||
+                        "No target"}
+                    </span>
+                  </>
+                )}
+              </div>
+            )) || []}
 
             {/* Add Option Button */}
             {isEditing && (

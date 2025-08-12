@@ -356,25 +356,6 @@ export default function DialogueEditor() {
     });
   };
 
-  const changeNodeType = (nodeId: string, newType: "DIALOGUE") => {
-    if (!editingTree) return;
-
-    const updatedNodes = editingTree.nodes.map((node) =>
-      node.id === nodeId
-        ? {
-            ...node,
-            type: newType,
-            data: { text: "New dialogue text", expression: "neutral", options: [] },
-          }
-        : node
-    );
-
-    setEditingTree({
-      ...editingTree,
-      nodes: updatedNodes,
-    });
-  };
-
   const duplicateNode = (nodeId: string) => {
     if (!editingTree) return;
 
@@ -926,7 +907,6 @@ export default function DialogueEditor() {
                       onDeleteNode={deleteNode}
                       onUpdateNodeData={updateNodeData}
                       onUpdateNodeName={updateNodeName}
-                      onChangeNodeType={changeNodeType}
                       onAddOption={addOptionToNode}
                       onUpdateOptionText={updateOptionText}
                       onUpdateOptionTarget={updateOptionTarget}

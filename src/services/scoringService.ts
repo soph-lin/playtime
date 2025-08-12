@@ -1,10 +1,7 @@
 import prisma from "@/lib/db";
-import { 
-  calculateSongPoints, 
-  calculateCompletionBonuses,
-  calculateTotalPoints 
-} from "@/utils/scoringCalculator";
+import { calculateSongPoints, calculateCompletionBonuses, calculateTotalPoints } from "@/utils/scoringCalculator";
 import { PlayerAttemptsData } from "@/types/scoring";
+import { Prisma } from "@prisma/client";
 
 export interface PlayerScoringState {
   playerId: string;
@@ -19,11 +16,9 @@ export interface PlayerScoringState {
 /**
  * Initialize scoring state for a new player
  */
-export async function initializePlayerScoring(
-  playerId: string, sessionId: string
-): Promise<PlayerScoringState> {
+export async function initializePlayerScoring(playerId: string, sessionId: string): Promise<PlayerScoringState> {
   const sessionStartTime = Date.now();
-  
+
   return {
     playerId,
     sessionId,
@@ -45,7 +40,7 @@ export function recordSongAttempt(
   currentTime: number
 ): PlayerScoringState {
   const existingAttempt = scoringState.attempts[songId];
-  
+
   if (existingAttempt) {
     // Update existing attempt
     existingAttempt.attempts += 1;
@@ -67,10 +62,8 @@ export function recordSongAttempt(
   // If correct, calculate points and mark as completed
   if (isCorrect) {
     const timeSeconds = (currentTime - scoringState.attempts[songId].startTime) / 1000;
-    const points = calculateSongPoints(
-      scoringState.attempts[songId].attempts, timeSeconds, true
-    );
-    
+    const points = calculateSongPoints(scoringState.attempts[songId].attempts, timeSeconds, true);
+
     scoringState.totalPoints += points;
     scoringState.songsCompleted += 1;
   }
@@ -87,13 +80,8 @@ export function calculatePlayerCompletionBonuses(
   isFirstToFinish: boolean | null
 ): { perfectGame: number; speedRun: number; firstToFinish: number } {
   const completionTime = (Date.now() - scoringState.sessionStartTime) / 1000;
-  
-  return calculateCompletionBonuses(
-    scoringState.songsCompleted,
-    totalSongs,
-    completionTime,
-    isFirstToFinish
-  );
+
+  return calculateCompletionBonuses(scoringState.songsCompleted, totalSongs, completionTime, isFirstToFinish);
 }
 
 /**
@@ -114,18 +102,14 @@ export function getPlayerScoringSummary(
   completionBonuses: { perfectGame: number; speedRun: number; firstToFinish: number };
   finalScore: number;
 } {
-  const completionBonuses = calculatePlayerCompletionBonuses(
-    scoringState,
-    totalSongs,
-    isFirstToFinish
-  );
+  const completionBonuses = calculatePlayerCompletionBonuses(scoringState, totalSongs, isFirstToFinish);
 
   const completionTime = (Date.now() - scoringState.sessionStartTime) / 1000;
   const accuracy = scoringState.totalGuesses > 0 ? scoringState.songsCompleted / scoringState.totalGuesses : 0;
-  
+
   const totalAttempts = Object.values(scoringState.attempts).reduce((sum, attempt) => sum + attempt.attempts, 0);
   const averageAttempts = scoringState.songsCompleted > 0 ? totalAttempts / scoringState.songsCompleted : 0;
-  
+
   const finalScore = calculateTotalPoints(scoringState.totalPoints, completionBonuses);
 
   return {
@@ -159,7 +143,7 @@ export async function updatePlayerScoringInDatabase(
       score: summary.finalScore,
       correct: summary.songsCompleted,
       totalGuesses: summary.totalGuesses,
-      attempts: scoringState.attempts,
+      attempts: scoringState.attempts as unknown as Prisma.InputJsonValue,
       completionTime,
       firstToFinish: isFirstToFinish,
     },
@@ -169,11 +153,8 @@ export async function updatePlayerScoringInDatabase(
 /**
  * Check if a game session is completed
  */
-export function isGameSessionCompleted(
-  players: Array<{ songsCompleted: number }>,
-  totalSongs: number
-): boolean {
-  return players.some(player => player.songsCompleted >= totalSongs);
+export function isGameSessionCompleted(players: Array<{ songsCompleted: number }>, totalSongs: number): boolean {
+  return players.some((player) => player.songsCompleted >= totalSongs);
 }
 
 /**
@@ -189,32 +170,31 @@ export function isFirstToFinish(
     return null;
   }
 
-  const currentPlayer = players.find(p => p.id === playerId);
+  const currentPlayer = players.find((p) => p.id === playerId);
   if (!currentPlayer || currentPlayer.songsCompleted < totalSongs) {
     return false;
   }
 
   // Check if any other player completed before this one
-  return !players.some(p => 
-    p.id !== playerId && 
-    p.songsCompleted >= totalSongs
-  );
+  return !players.some((p) => p.id !== playerId && p.songsCompleted >= totalSongs);
 }
 
 /**
  * Get leaderboard data for a session
  */
-export async function getSessionLeaderboard(sessionId: string): Promise<Array<{
-  playerId: string;
-  nickname: string;
-  finalScore: number;
-  songsCompleted: number;
-  accuracy: number;
-  averageAttempts: number;
-  averageTime: number;
-  completionTime: number;
-  firstToFinish: boolean;
-}>> {
+export async function getSessionLeaderboard(sessionId: string): Promise<
+  Array<{
+    playerId: string;
+    nickname: string;
+    finalScore: number;
+    songsCompleted: number;
+    accuracy: number;
+    averageAttempts: number;
+    averageTime: number;
+    completionTime: number;
+    firstToFinish: boolean | null;
+  }>
+> {
   const players = await prisma.gameSessionPlayer.findMany({
     where: { sessionId },
     select: {
@@ -229,24 +209,29 @@ export async function getSessionLeaderboard(sessionId: string): Promise<Array<{
     },
   });
 
-  return players.map((player: any) => {
-    const attempts = player.attempts as Record<string, any> || {};
-    
-    const totalAttempts = Object.values(attempts).reduce((sum: number, attempt: any) => sum + attempt.attempts, 0);
-    const averageAttempts = player.correct > 0 ? totalAttempts / player.correct : 0;
-    
-    const accuracy = player.totalGuesses > 0 ? player.correct / player.totalGuesses : 0;
+  return players
+    .map((player) => {
+      const attempts = (player.attempts as Record<string, unknown>) || {};
 
-    return {
-      playerId: player.id,
-      nickname: player.nickname,
-      finalScore: player.score,
-      songsCompleted: player.correct,
-      accuracy,
-      averageAttempts,
-      averageTime: 0, // Average time is no longer tracked in PlayerScoringState
-      completionTime: player.completionTime || 0,
-      firstToFinish: player.firstToFinish,
-    };
-  }).sort((a: any, b: any) => b.finalScore - a.finalScore);
+      const totalAttempts = Object.values(attempts).reduce((sum: number, attempt: unknown) => {
+        const attemptData = attempt as { attempts: number };
+        return sum + attemptData.attempts;
+      }, 0);
+      const averageAttempts = player.correct > 0 ? totalAttempts / player.correct : 0;
+
+      const accuracy = player.totalGuesses > 0 ? player.correct / player.totalGuesses : 0;
+
+      return {
+        playerId: player.id,
+        nickname: player.nickname,
+        finalScore: player.score,
+        songsCompleted: player.correct,
+        accuracy,
+        averageAttempts,
+        averageTime: 0, // Average time is no longer tracked in PlayerScoringState
+        completionTime: player.completionTime || 0,
+        firstToFinish: player.firstToFinish,
+      };
+    })
+    .sort((a, b) => b.finalScore - a.finalScore);
 }

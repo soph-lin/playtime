@@ -132,10 +132,10 @@ model GameSessionPlayer {
   sessionId      String      @map("session_id")
   userId         String?     @map("user_id")
   nickname       String
-  score          Int         @default(0) // Updated: Now stores total points
-  correct        Int         @default(0) // Keep for accuracy tracking
-  totalGuesses   Int         @default(0) @map("total_guesses") // Keep for efficiency tracking
-  attempts       Json? // New: Store attempts per song for attempt-based bonus
+  score          Int         @default(0)
+  correct        Int         @default(0)
+  totalGuesses   Int         @default(0) @map("total_guesses")
+  attempts       Json?
   // attempts JSON structure:
   // {
   //   "songId_1": {
@@ -147,8 +147,8 @@ model GameSessionPlayer {
   //   },
   //   "songId_2": { ... }
   // }
-  completionTime Int? // New: Track total time for speed run bonus
-  firstToFinish  Boolean?    // New: Track first completion (null for single-player games)
+  completionTime Int?
+  firstToFinish  Boolean?
   gameSession    GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   user           User?       @relation(fields: [userId], references: [id])
 

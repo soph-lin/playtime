@@ -2,10 +2,13 @@ import { useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Mesh, Vector3, EdgesGeometry, LineBasicMaterial, LineSegments, CylinderGeometry } from "three";
 
-export default function FlatRecord() {
+interface FlatRecordProps {
+  rotationSpeed?: number; // Radians per frame, higher is faster
+}
+
+export default function FlatRecord({ rotationSpeed = 0.05 }: FlatRecordProps) {
   const recordRef = useRef<Mesh>(null);
   const rotationAxis = new Vector3(0.5, 0.2, 0).normalize();
-  const rotationSpeed = 0.05;
   const [isPaused, setIsPaused] = useState(false);
 
   useFrame(() => {

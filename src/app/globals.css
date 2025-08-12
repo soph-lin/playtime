@@ -59,6 +59,9 @@
   --color-light-gray: #ffffff;
   --color-medium-gray: #dfe3e7;
 
+  --color-cerulean-500: #1a73e8;
+  --color-cerulean-600: #1a73e8;
+
   /* Custom z-index values */
   --z-modal: 999;
   --z-dropdown: 1000;

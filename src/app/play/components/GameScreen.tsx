@@ -11,6 +11,7 @@ import GuessModal from "./GuessModal";
 import UserStats from "./UserStats";
 import { useUser } from "@clerk/nextjs";
 import { useUserExperience } from "@/hooks/useUserExperience";
+import LoadingScreen from "@/components/LoadingScreen";
 
 interface PlaylistWithSongs extends Playlist {
   songs: Song[];
@@ -193,7 +194,11 @@ export default function GameScreen() {
   }
 
   if (isLoading) {
-    return <div className="text-center p-4">Loading game...</div>;
+    return (
+      <LoadingScreen isLoading={true}>
+        <div />
+      </LoadingScreen>
+    );
   }
 
   if (allSongs.length === 0) {

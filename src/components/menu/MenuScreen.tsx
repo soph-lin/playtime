@@ -4,7 +4,7 @@ import { useState } from "react";
 import Menu from "@/components/menu/Menu";
 import MenuSidePanel from "@/components/menu/MenuSidePanel";
 import StartGameModal from "@/components/menu/StartGameModal";
-import ScrollingBackground from "@/components/background/ScrollingBackground";
+import StarsBackground from "@/components/background/StarsBackground";
 import { Canvas } from "@react-three/fiber";
 import FlatRecord from "@/components/3d/FlatRecord";
 import { SignInButton } from "@/components/profile/SignInButton";
@@ -87,7 +87,7 @@ export default function MenuScreen() {
 
   return (
     <div className="min-h-screen flex">
-      <ScrollingBackground />
+      <StarsBackground />
       {/* Auth Button - Top Right */}
       <div className="absolute top-4 right-4 z-10">
         <SignInButton />

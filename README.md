@@ -178,7 +178,6 @@ pnpm dev
 **Database Management**
 
 - **`prisma`**: Pulls the database schema and generates the Prisma client.
-- **`build-db`**: Populates the database with tracks from SoundCloud.
 
 **Development**
 

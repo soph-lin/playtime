@@ -1,4 +1,4 @@
-import { SOUNDCLOUD_CLIENT_ID, SOUNDCLOUD_API_URL } from "@/config/constants";
+import { SOUNDCLOUD_CLIENT_ID, SOUNDCLOUD_API_URL } from "@/constants/soundcloud";
 import { SoundCloudTokenService } from "@/services/soundcloud/token";
 import { SearchResponse } from "@/app/api/soundcloud/types";
 

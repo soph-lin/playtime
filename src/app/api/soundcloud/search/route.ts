@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { SOUNDCLOUD_API_URL } from "@/config/constants";
+import { SOUNDCLOUD_API_URL } from "@/constants/soundcloud";
 import { SoundCloudTrack } from "../types";
 import { SoundCloudTokenService } from "@/services/soundcloud/token";
 

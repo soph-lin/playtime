@@ -150,7 +150,7 @@ enum DialogueNodeType {
   CONDITION
 }
 
-model DialogueTree {
+model Dialogue {
   id            String   @id @default(cuid())
   title         String
   characterName String   @map("character_name")
@@ -159,25 +159,4 @@ model DialogueTree {
   metadata      Json     @default("{}")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt
-
-  // Relations
-  dialogueNodes DialogueNode[]
-
-  @@map("dialogue_trees")
-}
-
-model DialogueNode {
-  id        String           @id @default(cuid())
-  treeId    String           @map("tree_id")
-  type      DialogueNodeType
-  position  Json // { x: number, y: number } for visual editor layout
-  data      Json // Node-specific data (text, expressions, etc.)
-  createdAt DateTime         @default(now()) @map("created_at")
-  updatedAt DateTime         @updatedAt
-
-  // Relations
-  tree DialogueTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
-
-  @@index([treeId])
-  @@map("dialogue_nodes")
 }

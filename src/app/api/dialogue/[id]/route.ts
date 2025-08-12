@@ -7,17 +7,17 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const { id } = await params;
 
     if (!id) {
-      return NextResponse.json({ error: "Dialogue tree ID is required" }, { status: 400 });
+      return NextResponse.json({ error: "Dialogue ID is required" }, { status: 400 });
     }
 
-    // Delete the dialogue tree
-    await prisma.dialogueTree.delete({
+    // Delete the dialogue
+    await prisma.dialogue.delete({
       where: { id },
     });
 
-    return NextResponse.json({ message: "Dialogue tree deleted successfully" }, { status: 200 });
+    return NextResponse.json({ message: "Dialogue deleted successfully" }, { status: 200 });
   } catch (error) {
-    console.error("Error deleting dialogue tree:", error);
-    return NextResponse.json({ error: "Failed to delete dialogue tree" }, { status: 500 });
+    console.error("Error deleting dialogue:", error);
+    return NextResponse.json({ error: "Failed to delete dialogue" }, { status: 500 });
   }
 }

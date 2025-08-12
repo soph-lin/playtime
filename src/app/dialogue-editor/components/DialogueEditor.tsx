@@ -54,7 +54,7 @@ export default function DialogueEditor() {
   const [deletingNodeId, setDeletingNodeId] = useState<string | null>(null);
   const [deletingTreeId, setDeletingTreeId] = useState<string | null>(null);
 
-  // Load existing dialogue trees from database
+  // Load existing dialogues from database
   useEffect(() => {
     const fetchDialogueTrees = async () => {
       try {
@@ -63,10 +63,10 @@ export default function DialogueEditor() {
           const data = await response.json();
           setDialogueTrees(data);
         } else {
-          console.error("Failed to fetch dialogue trees");
+          console.error("Failed to fetch dialogues");
         }
       } catch (error) {
-        console.error("Error fetching dialogue trees:", error);
+        console.error("Error fetching dialogues:", error);
       }
     };
 
@@ -123,10 +123,10 @@ export default function DialogueEditor() {
           setSelectedTree(newTree);
           setIsCreateModalOpen(false);
         } else {
-          console.error("Failed to create dialogue tree");
+          console.error("Failed to create dialogue");
         }
       } catch (error) {
-        console.error("Error creating dialogue tree:", error);
+        console.error("Error creating dialogue:", error);
       }
     },
     []
@@ -265,10 +265,10 @@ export default function DialogueEditor() {
           setEditingTree(null);
         }
       } else {
-        console.error("Failed to delete dialogue tree");
+        console.error("Failed to delete dialogue");
       }
     } catch (error) {
-      console.error("Error deleting dialogue tree:", error);
+      console.error("Error deleting dialogue:", error);
     } finally {
       setDeletingTreeId(null);
     }
@@ -297,14 +297,14 @@ export default function DialogueEditor() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Dialogue Editor</h1>
-          <p className="text-gray-600 mt-2">Create and manage character dialogue trees</p>
+          <p className="text-gray-600 mt-2">Create and manage character dialogues</p>
         </div>
 
         {/* Toolbar */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex gap-4">
             <Button onClick={() => setIsCreateModalOpen(true)} className="bg-blue-600 hover:bg-blue-700">
-              Create New Dialogue Tree
+              Create New Dialogue
             </Button>
             <Button variant="outline">Import JSON</Button>
           </div>
@@ -321,12 +321,12 @@ export default function DialogueEditor() {
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Dialogue Tree List */}
+          {/* Dialogue List */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow p-4">
-              <h3 className="font-semibold text-gray-900 mb-4">Dialogue Trees</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">Dialogues</h3>
               {dialogueTrees.length === 0 ? (
-                <p className="text-gray-500 text-sm">No dialogue trees created yet.</p>
+                <p className="text-gray-500 text-sm">No dialogues created yet.</p>
               ) : (
                 <div className="space-y-2">
                   {dialogueTrees.map((tree) => (
@@ -353,7 +353,7 @@ export default function DialogueEditor() {
                           deleteDialogueTree(tree.id);
                         }}
                         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
-                        title="Delete dialogue tree"
+                        title="Delete dialogue"
                         disabled={deletingTreeId === tree.id}
                       >
                         {deletingTreeId === tree.id ? <Spinner size={16} className="animate-spin" /> : <X size={16} />}
@@ -506,9 +506,9 @@ export default function DialogueEditor() {
             ) : (
               <div className="bg-white rounded-lg shadow p-12 text-center">
                 <div className="text-gray-400 text-6xl mb-4">🎭</div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Dialogue Tree Selected</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Dialogue Selected</h3>
                 <p className="text-gray-500">
-                  Select a dialogue tree from the left panel or create a new one to get started.
+                  Select a dialogue from the left panel or create a new one to get started.
                 </p>
               </div>
             )}

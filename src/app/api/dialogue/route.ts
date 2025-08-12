@@ -1,23 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 
-// GET /api/dialogue - Get all dialogue trees
+// GET /api/dialogue - Get all dialogues
 export async function GET() {
   try {
-    const dialogueTrees = await prisma.dialogueTree.findMany({
+    const dialogues = await prisma.dialogue.findMany({
       orderBy: {
         createdAt: "desc",
       },
     });
 
-    return NextResponse.json(dialogueTrees);
+    return NextResponse.json(dialogues);
   } catch (error) {
-    console.error("Error fetching dialogue trees:", error);
-    return NextResponse.json({ error: "Failed to fetch dialogue trees" }, { status: 500 });
+    console.error("Error fetching dialogues:", error);
+    return NextResponse.json({ error: "Failed to fetch dialogues" }, { status: 500 });
   }
 }
 
-// POST /api/dialogue - Create a new dialogue tree
+// POST /api/dialogue - Create a new dialogue
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -27,8 +27,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Title and character name are required" }, { status: 400 });
     }
 
-    // Create the dialogue tree
-    const dialogueTree = await prisma.dialogueTree.create({
+    // Create the dialogue
+    const dialogue = await prisma.dialogue.create({
       data: {
         title,
         characterName,
@@ -50,25 +50,25 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(dialogueTree, { status: 201 });
+    return NextResponse.json(dialogue, { status: 201 });
   } catch (error) {
-    console.error("Error creating dialogue tree:", error);
-    return NextResponse.json({ error: "Failed to create dialogue tree" }, { status: 500 });
+    console.error("Error creating dialogue:", error);
+    return NextResponse.json({ error: "Failed to create dialogue" }, { status: 500 });
   }
 }
 
-// PUT /api/dialogue - Update an existing dialogue tree
+// PUT /api/dialogue - Update an existing dialogue
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     const { id, title, characterName, description, nodes, connections } = body;
 
     if (!id) {
-      return NextResponse.json({ error: "Dialogue tree ID is required" }, { status: 400 });
+      return NextResponse.json({ error: "Dialogue ID is required" }, { status: 400 });
     }
 
-    // Update the dialogue tree
-    const updatedTree = await prisma.dialogueTree.update({
+    // Update the dialogue
+    const updatedDialogue = await prisma.dialogue.update({
       where: { id },
       data: {
         title,
@@ -81,9 +81,9 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(updatedTree);
+    return NextResponse.json(updatedDialogue);
   } catch (error) {
-    console.error("Error updating dialogue tree:", error);
-    return NextResponse.json({ error: "Failed to update dialogue tree" }, { status: 500 });
+    console.error("Error updating dialogue:", error);
+    return NextResponse.json({ error: "Failed to update dialogue" }, { status: 500 });
   }
 }

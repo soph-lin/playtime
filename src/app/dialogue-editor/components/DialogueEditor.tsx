@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import CreateDialogueModal from "./CreateDialogueModal";
@@ -38,10 +38,22 @@ interface DialogueTree {
   };
 }
 
+// Keyboard shortcuts mapping
+const SHORTCUTS = {
+  a: "add node",
+  d: "delete node",
+  c: "duplicate node",
+  e: "toggle edit mode",
+  s: "save changes",
+  p: "toggle play",
+} as const;
+
 export default function DialogueEditor() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [dialogueTrees, setDialogueTrees] = useState<DialogueTree[]>([]);
   const [selectedTree, setSelectedTree] = useState<DialogueTree | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
 
   // Form state for editing existing trees
   const [editingTree, setEditingTree] = useState<DialogueTree | null>(null);
@@ -53,6 +65,9 @@ export default function DialogueEditor() {
   const [isSaving, setIsSaving] = useState(false);
   const [deletingNodeId, setDeletingNodeId] = useState<string | null>(null);
   const [deletingTreeId, setDeletingTreeId] = useState<string | null>(null);
+
+  // Refs for input focus detection
+  const inputRefs = useRef<{ [key: string]: HTMLInputElement | HTMLSelectElement | null }>({});
 
   // Load existing dialogues from database
   useEffect(() => {
@@ -139,6 +154,10 @@ export default function DialogueEditor() {
   const handleStartEditing = (tree: DialogueTree) => {
     setEditingTree({ ...tree });
     setSelectedTree(tree);
+    // Select first node when starting to edit
+    if (tree.nodes.length > 0) {
+      setSelectedNodeId(tree.nodes[0].id);
+    }
   };
 
   const handleSaveChanges = async () => {
@@ -166,6 +185,7 @@ export default function DialogueEditor() {
           setDialogueTrees(updatedTrees);
           setSelectedTree(updatedTree);
           setEditingTree(null);
+          setSelectedNodeId(null);
         } else {
           console.error("Failed to save changes");
         }
@@ -179,6 +199,7 @@ export default function DialogueEditor() {
 
   const handleCancelEditing = () => {
     setEditingTree(null);
+    setSelectedNodeId(null);
   };
 
   const addNewNode = () => {
@@ -195,10 +216,43 @@ export default function DialogueEditor() {
       },
     };
 
-    setEditingTree({
+    const updatedTree = {
       ...editingTree,
       nodes: [...editingTree.nodes, newNode],
-    });
+    };
+
+    setEditingTree(updatedTree);
+    setSelectedNodeId(newNodeId);
+  };
+
+  const duplicateNode = (nodeId: string) => {
+    if (!editingTree) return;
+
+    const nodeToDuplicate = editingTree.nodes.find((n) => n.id === nodeId);
+    if (!nodeToDuplicate) return;
+
+    const newNodeId = `node_${Date.now()}`;
+    const newNode = {
+      ...nodeToDuplicate,
+      id: newNodeId,
+      position: {
+        x: nodeToDuplicate.position.x + 20,
+        y: nodeToDuplicate.position.y + 20,
+      },
+    };
+
+    // Insert after the duplicated node
+    const nodeIndex = editingTree.nodes.findIndex((n) => n.id === nodeId);
+    const updatedNodes = [...editingTree.nodes];
+    updatedNodes.splice(nodeIndex + 1, 0, newNode);
+
+    const updatedTree = {
+      ...editingTree,
+      nodes: updatedNodes,
+    };
+
+    setEditingTree(updatedTree);
+    setSelectedNodeId(newNodeId);
   };
 
   const updateNodeData = (nodeId: string, field: string, value: string) => {
@@ -237,11 +291,18 @@ export default function DialogueEditor() {
         (connection) => connection.fromNodeId !== nodeId && connection.toNodeId !== nodeId
       );
 
-      setEditingTree({
+      const updatedTree = {
         ...editingTree,
         nodes: updatedNodes,
         connections: updatedConnections,
-      });
+      };
+
+      setEditingTree(updatedTree);
+
+      // Clear selection if deleted node was selected
+      if (selectedNodeId === nodeId) {
+        setSelectedNodeId(updatedNodes.length > 0 ? updatedNodes[0].id : null);
+      }
 
       setDeletingNodeId(null);
     }, 300);
@@ -263,6 +324,7 @@ export default function DialogueEditor() {
         if (selectedTree?.id === treeId) {
           setSelectedTree(null);
           setEditingTree(null);
+          setSelectedNodeId(null);
         }
       } else {
         console.error("Failed to delete dialogue");
@@ -274,22 +336,142 @@ export default function DialogueEditor() {
     }
   };
 
-  // Keyboard shortcut for playtest toggle - moved here after function definitions
+  // Handle node selection with tab navigation
+  const handleNodeSelect = (nodeId: string) => {
+    setSelectedNodeId(nodeId);
+  };
+
+  const handleTabNavigation = (e: React.KeyboardEvent, currentNodeId: string) => {
+    // Only handle Tab key events
+    if (e.key !== "Tab") return;
+
+    if (!editingTree) return;
+
+    const currentIndex = editingTree.nodes.findIndex((n) => n.id === currentNodeId);
+    if (currentIndex === -1) return;
+
+    let nextIndex: number;
+    if (e.shiftKey) {
+      // Shift+Tab: go to previous node
+      nextIndex = currentIndex > 0 ? currentIndex - 1 : editingTree.nodes.length - 1;
+    } else {
+      // Tab: go to next node
+      nextIndex = currentIndex < editingTree.nodes.length - 1 ? currentIndex + 1 : 0;
+    }
+
+    const nextNode = editingTree.nodes[nextIndex];
+    if (nextNode) {
+      setSelectedNodeId(nextNode.id);
+      // Focus the first input in the next node
+      setTimeout(() => {
+        const nextInput = inputRefs.current[`${nextNode.id}_text`];
+        if (nextInput) {
+          nextInput.focus();
+        }
+      }, 0);
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, nodeId: string) => {
+    setDraggedNodeId(nodeId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent, targetNodeId: string) => {
+    e.preventDefault();
+
+    if (!draggedNodeId || !editingTree || draggedNodeId === targetNodeId) return;
+
+    const draggedIndex = editingTree.nodes.findIndex((n) => n.id === draggedNodeId);
+    const targetIndex = editingTree.nodes.findIndex((n) => n.id === targetNodeId);
+
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    const updatedNodes = [...editingTree.nodes];
+    const [draggedNode] = updatedNodes.splice(draggedIndex, 1);
+    updatedNodes.splice(targetIndex, 0, draggedNode);
+
+    setEditingTree({
+      ...editingTree,
+      nodes: updatedNodes,
+    });
+
+    setDraggedNodeId(null);
+  };
+
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === "p" && selectedTree) {
-        e.preventDefault();
-        if (isPlaytesting) {
-          handleStopPlaytest();
-        } else {
-          handlePlaytest();
-        }
+      // Don't trigger shortcuts if typing in an input
+      const activeElement = document.activeElement;
+      const isInputFocused =
+        activeElement?.tagName === "INPUT" ||
+        activeElement?.tagName === "TEXTAREA" ||
+        activeElement?.tagName === "SELECT";
+
+      if (isInputFocused) return;
+
+      const key = e.key.toLowerCase();
+
+      switch (key) {
+        case "p":
+          if (selectedTree) {
+            e.preventDefault();
+            if (isPlaytesting) {
+              handleStopPlaytest();
+            } else {
+              handlePlaytest();
+            }
+          }
+          break;
+        case "a":
+          if (editingTree) {
+            e.preventDefault();
+            addNewNode();
+          }
+          break;
+        case "d":
+          if (editingTree && selectedNodeId) {
+            e.preventDefault();
+            deleteNode(selectedNodeId);
+          }
+          break;
+        case "c":
+          if (editingTree && selectedNodeId) {
+            e.preventDefault();
+            duplicateNode(selectedNodeId);
+          }
+          break;
+        case "e":
+          if (selectedTree) {
+            e.preventDefault();
+            if (editingTree) {
+              // If already editing, cancel editing
+              handleCancelEditing();
+            } else {
+              // If not editing, start editing
+              handleStartEditing(selectedTree);
+            }
+          }
+          break;
+        case "s":
+          if (editingTree && selectedTree) {
+            e.preventDefault();
+            handleSaveChanges();
+          }
+          break;
       }
     };
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [selectedTree, isPlaytesting, handlePlaytest, handleStopPlaytest]);
+  }, [selectedTree, isPlaytesting, editingTree, selectedNodeId, handlePlaytest, handleStopPlaytest]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -298,6 +480,20 @@ export default function DialogueEditor() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Dialogue Editor</h1>
           <p className="text-gray-600 mt-2">Create and manage character dialogues</p>
+
+          {/* Keyboard shortcuts description */}
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex flex-wrap gap-2 text-sm text-blue-700">
+              {Object.entries(SHORTCUTS).map(([key, functionName]) => (
+                <span key={key} className="flex items-center gap-1">
+                  <div className="px-2 py-1 bg-white border border-blue-300 rounded shadow-sm font-mono text-xs font-medium">
+                    {key}
+                  </div>
+                  <span>{functionName}</span>
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Toolbar */}
@@ -310,9 +506,6 @@ export default function DialogueEditor() {
           </div>
 
           <div className="flex gap-2">
-            <Button variant="outline" size="sm">
-              Save All
-            </Button>
             <Button variant="outline" size="sm">
               Export
             </Button>
@@ -437,15 +630,30 @@ export default function DialogueEditor() {
                   </div>
                 </div>
 
-                {/* Simple Node Editor for now */}
+                {/* Node Editor */}
                 <div className="space-y-4">
-                  {(editingTree || selectedTree)?.nodes.map((node) => (
-                    <div key={node.id} className="border rounded-lg p-4 relative group">
+                  {(editingTree || selectedTree)?.nodes.map((node, index) => (
+                    <div
+                      key={node.id}
+                      draggable={editingTree !== null}
+                      onDragStart={(e) => handleDragStart(e, node.id)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, node.id)}
+                      className={`border rounded-lg p-4 relative group cursor-move transition-all ${
+                        selectedNodeId === node.id
+                          ? "border-blue-500 border-2 shadow-lg"
+                          : "border-gray-200 hover:border-gray-300"
+                      } ${draggedNodeId === node.id ? "opacity-50" : ""}`}
+                      onClick={() => editingTree && handleNodeSelect(node.id)}
+                    >
                       <div className="flex items-center gap-2 mb-3">
-                        <span className="text-sm font-medium text-gray-700">Node: {node.id}</span>
+                        <span className="text-sm font-medium text-gray-700">Node {index + 1}</span>
                         <span className="text-xs px-2 py-1 bg-gray-100 rounded-full capitalize">
                           {node.type.toLowerCase()}
                         </span>
+                        {editingTree && (
+                          <span className="text-xs text-gray-500">(Tab to navigate, Shift+Tab for previous)</span>
+                        )}
                       </div>
 
                       {/* Delete node button - appears on hover */}
@@ -469,14 +677,22 @@ export default function DialogueEditor() {
                           {editingTree ? (
                             <>
                               <Input
+                                ref={(el) => {
+                                  inputRefs.current[`${node.id}_text`] = el;
+                                }}
                                 placeholder="Enter dialogue text..."
                                 value={editingTree.nodes.find((n) => n.id === node.id)?.data.text || ""}
                                 onChange={(e) => updateNodeData(node.id, "text", e.target.value)}
+                                onKeyDown={(e) => handleTabNavigation(e, node.id)}
                               />
                               <select
+                                ref={(el) => {
+                                  inputRefs.current[`${node.id}_expression`] = el;
+                                }}
                                 value={editingTree.nodes.find((n) => n.id === node.id)?.data.expression || "neutral"}
                                 onChange={(e) => updateNodeData(node.id, "expression", e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                onKeyDown={(e) => handleTabNavigation(e, node.id)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
                               >
                                 <option value="happy">Happy</option>
                                 <option value="sad">Sad</option>

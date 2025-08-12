@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { CaretCircleDownIcon, MagnifyingGlassIcon, XIcon } from "@phosphor-icons/react";
+import { CaretDownIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 interface SelectOption {
@@ -72,16 +72,6 @@ const Select = React.forwardRef<HTMLDivElement, SelectProps>(
       setSearchQuery("");
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        handleToggle();
-      } else if (e.key === "Escape") {
-        setIsOpen(false);
-        setSearchQuery("");
-      }
-    };
-
     // Filter options based on search query
     const filteredOptions =
       searchable && searchQuery
@@ -90,105 +80,72 @@ const Select = React.forwardRef<HTMLDivElement, SelectProps>(
 
     return (
       <div className={cn("relative", className)} ref={ref}>
-        {/* Trigger button */}
-        <button
-          type="button"
-          onClick={handleToggle}
-          onKeyDown={handleKeyDown}
-          disabled={disabled}
+        {/* Trigger button / Search input */}
+        <div
           className={cn(
             "flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-background px-3 py-2 text-sm ring-offset-background transition-colors",
-            "focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
+            "focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500",
             "disabled:cursor-not-allowed disabled:opacity-50",
             "hover:border-gray-400"
           )}
-          aria-haspopup="listbox"
-          aria-expanded={isOpen}
         >
-          <span className={cn("truncate", selectedOption ? "text-gray-900" : "text-gray-500")}>
-            {selectedOption ? selectedOption.label : placeholder}
-          </span>
-          <CaretCircleDownIcon
+          {isOpen ? (
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search options..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 bg-transparent outline-none placeholder:text-gray-500"
+            />
+          ) : (
+            <span
+              className={cn("flex-1 truncate cursor-pointer", selectedOption ? "text-gray-900" : "text-gray-500")}
+              onClick={handleToggle}
+            >
+              {selectedOption ? selectedOption.label : placeholder}
+            </span>
+          )}
+          <CaretDownIcon
             size={16}
-            className={cn("transition-transform duration-200 text-gray-400", isOpen && "rotate-180")}
+            className={cn("transition-transform duration-200 text-gray-400 cursor-pointer", isOpen && "rotate-180")}
+            onClick={handleToggle}
           />
-        </button>
+        </div>
 
         {/* Dropdown */}
-        {isOpen && (
-          <div
-            ref={dropdownRef}
-            className="absolute z-50 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg"
-            style={{
-              animation: "dropdownSlide 200ms ease-out",
-            }}
-          >
-            {/* Search input */}
-            {searchable && (
-              <div className="border-b border-gray-100 p-2">
-                <div className="relative">
-                  <MagnifyingGlassIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    placeholder="Search options..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery("")}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
-                    >
-                      <XIcon size={14} />
-                    </button>
+        <div
+          ref={dropdownRef}
+          className={cn(
+            "absolute z-50 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg overflow-hidden transition-all duration-300 ease-out",
+            isOpen ? "max-h-60 opacity-100" : "max-h-0 opacity-0"
+          )}
+        >
+          {/* Options list */}
+          <div className="p-1">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => handleSelect(option)}
+                  className={cn(
+                    "w-full px-3 py-2 text-sm text-left transition-colors rounded-md",
+                    "hover:bg-blue-50 hover:text-blue-900",
+                    "focus:outline-none focus:bg-blue-50 focus:text-blue-900",
+                    selectedOption?.value === option.value && "bg-blue-100 text-blue-900"
                   )}
-                </div>
+                >
+                  {option.label}
+                </button>
+              ))
+            ) : (
+              <div className="px-3 py-4 text-sm text-gray-500 text-center">
+                {searchQuery ? "No options found" : "No options available"}
               </div>
             )}
-
-            {/* Options list */}
-            <div className="max-h-60 overflow-y-auto">
-              {filteredOptions.length > 0 ? (
-                filteredOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => handleSelect(option)}
-                    className={cn(
-                      "w-full px-3 py-2 text-sm text-left transition-colors",
-                      "hover:bg-blue-50 hover:text-blue-900",
-                      "focus:outline-none focus:bg-blue-50 focus:text-blue-900",
-                      selectedOption?.value === option.value && "bg-blue-100 text-blue-900"
-                    )}
-                  >
-                    {option.label}
-                  </button>
-                ))
-              ) : (
-                <div className="px-3 py-4 text-sm text-gray-500 text-center">
-                  {searchQuery ? "No options found" : "No options available"}
-                </div>
-              )}
-            </div>
           </div>
-        )}
-
-        {/* CSS Animation */}
-        <style jsx>{`
-          @keyframes dropdownSlide {
-            from {
-              opacity: 0;
-              transform: translateY(-8px) scale(0.95);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0) scale(1);
-            }
-          }
-        `}</style>
+        </div>
       </div>
     );
   }

@@ -207,11 +207,11 @@ export default function DialogueNode({
               value={(editingTree?.nodes.find((n) => n.id === node.id)?.data.expression as string) || "neutral"}
               onChange={(value) => onUpdateNodeData(node.id, "expression", value)}
               options={[
+                { value: "neutral", label: "Neutral" },
                 { value: "happy", label: "Happy" },
                 { value: "sad", label: "Sad" },
                 { value: "nervous", label: "Nervous" },
                 { value: "angry", label: "Angry" },
-                { value: "neutral", label: "Neutral" },
               ]}
               placeholder="Select expression"
               searchable={true}

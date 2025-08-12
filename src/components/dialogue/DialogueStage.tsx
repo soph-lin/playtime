@@ -151,7 +151,11 @@ export default function DialogueStage() {
       <div className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-end gap-6 z-50 pb-6">
         {/* Character sprite */}
         <div className="flex flex-col items-center gap-2">
-          <Sprite characterId={currentDialogue.character.id} size="large" />
+          <Sprite
+            characterId={currentDialogue.character.id}
+            expression={currentDialogue.character.expression}
+            size="large"
+          />
         </div>
 
         {/* Dialogue container */}

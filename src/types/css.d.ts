@@ -5,3 +5,8 @@ declare module "react" {
     "--outline-color"?: string;
   }
 }
+
+declare module "*.css" {
+  const content: string;
+  export default content;
+}

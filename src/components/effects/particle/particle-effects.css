@@ -1,0 +1,185 @@
+/* Particle Effects Animations */
+
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0.8) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2) rotate(180deg);
+  }
+}
+
+@keyframes tear-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(0px) scale(0.5);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(8px) scale(1);
+  }
+  85% {
+    opacity: 1;
+    transform: translateY(60px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(80px) scale(0.8);
+  }
+}
+
+@keyframes sweat-burst {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) translateX(0) translateY(0);
+  }
+  10% {
+    opacity: 1;
+    transform: scale(1.2) translateX(0) translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1) translateX(calc(var(--out-x, 0px) * 0.3)) translateY(calc(var(--out-y, -60px) * 0.3));
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.8) translateX(var(--out-x, 0px)) translateY(var(--out-y, -60px));
+  }
+}
+
+@keyframes storm-cloud {
+  0%, 100% {
+    opacity: 0.6;
+    transform: translateX(-5px) scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(5px) scale(1.1);
+  }
+}
+
+/* Organic cloud movement animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+  }
+  25% {
+    transform: translateY(-2px) translateX(1px);
+  }
+  50% {
+    transform: translateY(-1px) translateX(-1px);
+  }
+  75% {
+    transform: translateY(-3px) translateX(2px);
+  }
+}
+
+@keyframes gentle-drift {
+  0%, 100% {
+    transform: translateX(0px);
+  }
+  50% {
+    transform: translateX(-3px);
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0px) translateY(0px);
+  }
+  25% {
+    transform: translateX(-3px) translateY(-1px);
+  }
+  50% {
+    transform: translateX(2px) translateY(1px);
+  }
+  75% {
+    transform: translateX(-2px) translateY(-2px);
+  }
+}
+
+@keyframes expand {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+
+
+/* Apply animations to particles based on expression */
+.particle-container[data-expression="happy"] .particle {
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+.particle-container[data-expression="nervous"] .particle {
+  animation: sweat-burst 1.2s ease-out infinite;
+}
+
+.particle-container[data-expression="nervous"] .particle:nth-child(1) {
+  --out-x: 0px;
+  --out-y: -80px;
+}
+
+.particle-container[data-expression="nervous"] .particle:nth-child(2) {
+  --out-x: -50px;
+  --out-y: -60px;
+}
+
+.particle-container[data-expression="nervous"] .particle:nth-child(3) {
+  --out-x: 50px;
+  --out-y: -60px;
+}
+
+.particle-container[data-expression="nervous"] .particle:nth-child(4) {
+  --out-x: -80px;
+  --out-y: -40px;
+}
+
+.particle-container[data-expression="nervous"] .particle:nth-child(5) {
+  --out-x: 80px;
+  --out-y: -40px;
+}
+
+.particle-container[data-expression="nervous"] .particle:nth-child(6) {
+  --out-x: -40px;
+  --out-y: -70px;
+}
+
+.particle-container[data-expression="nervous"] .particle:nth-child(7) {
+  --out-x: 40px;
+  --out-y: -70px;
+}
+
+.particle-container[data-expression="nervous"] .particle:nth-child(8) {
+  --out-x: 0px;
+  --out-y: -100px;
+}
+
+.particle-container[data-expression="sad"] .particle {
+  animation: tear-drop 3s ease-out infinite;
+}
+
+/* Angry expression uses shake animation - removed conflicting burst-cloud */
+
+/* Add subtle floating motion for more organic feel */
+.particle-container[data-expression="happy"] .particle:nth-child(odd) {
+  animation: sparkle 2s ease-in-out infinite, float 3s ease-in-out infinite;
+}
+
+.particle-container[data-expression="happy"] .particle:nth-child(even) {
+  animation: sparkle 2s ease-in-out infinite, float 3s ease-in-out infinite reverse;
+}
+
+/* Removed conflicting animation for sad expression - tear-drop animation is defined above */
+
+.particle-container[data-expression="angry"] .particle {
+  animation: shake 0.2s ease-in-out infinite;
+}

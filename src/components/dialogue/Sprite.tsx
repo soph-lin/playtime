@@ -4,6 +4,9 @@ import React from "react";
 import { cn } from "@/lib/utils";
 import { getCharacterComponent } from "@/constants/characterInformation";
 import "./dialogue-animations.css";
+import { ParticleContainer } from "../effects/particle";
+import { getParticleEffect } from "@/constants/characterInformation";
+import "../effects/particle/particle-effects.css";
 
 interface SpriteProps {
   characterId: string;
@@ -11,15 +14,6 @@ interface SpriteProps {
   size?: "small" | "medium" | "large";
   className?: string;
 }
-
-// Expression-based particle effects
-const EXPRESSION_EFFECTS = {
-  happy: "sparkle-effect",
-  nervous: "sweat-effect",
-  sad: "storm-effect",
-  angry: "burst-effect",
-  neutral: "",
-};
 
 // Size classes with pixel values for the new size prop system
 const SIZE_VALUES = {
@@ -41,97 +35,29 @@ export function Sprite({ characterId, expression = "neutral", size = "medium", c
     );
   }
 
-  const effectClass = EXPRESSION_EFFECTS[expression];
-
   return (
     <div className={cn("relative", className)}>
-      {/* Character Sprite */}
-      <div className={cn("sprite-idle", effectClass && "relative")}>
-        <Character size={sizeValue} />
-      </div>
-
-      {/* Expression Effects */}
-      {expression !== "neutral" && (
-        <div className="absolute inset-0 pointer-events-none">
-          {expression === "happy" && <SparkleEffect />}
-          {expression === "nervous" && <SweatEffect />}
-          {expression === "sad" && <StormEffect />}
-          {expression === "angry" && <BurstEffect />}
-        </div>
-      )}
+      {(() => {
+        const particleEffect = getParticleEffect(expression);
+        return particleEffect ? (
+          <ParticleContainer
+            particles={particleEffect.particles}
+            icon={<span>{particleEffect.icon}</span>}
+            iconClassName={particleEffect.className}
+            expression={expression}
+          >
+            {/* Character Sprite */}
+            <div className="sprite-idle z-dropdown">
+              <Character size={sizeValue} />
+            </div>
+          </ParticleContainer>
+        ) : (
+          /* Character Sprite without particles */
+          <div className="sprite-idle">
+            <Character size={sizeValue} />
+          </div>
+        );
+      })()}
     </div>
-  );
-}
-
-// Particle Effect Components
-function SparkleEffect() {
-  return (
-    <>
-      {[...Array(6)].map((_, i) => (
-        <div
-          key={i}
-          className="absolute w-2 h-2 bg-yellow-400 rounded-full sparkle"
-          style={{
-            left: `${20 + i * 15}%`,
-            top: `${10 + i * 20}%`,
-            animationDelay: `${i * 0.2}s`,
-          }}
-        />
-      ))}
-    </>
-  );
-}
-
-function SweatEffect() {
-  return (
-    <>
-      {[...Array(3)].map((_, i) => (
-        <div
-          key={i}
-          className="absolute w-1.5 h-1.5 bg-blue-400 rounded-full sweat-drop"
-          style={{
-            left: `${15 + i * 10}%`,
-            top: "0%",
-            animationDelay: `${i * 0.3}s`,
-          }}
-        />
-      ))}
-    </>
-  );
-}
-
-function StormEffect() {
-  return (
-    <>
-      {[...Array(4)].map((_, i) => (
-        <div
-          key={i}
-          className="absolute w-3 h-3 bg-gray-600 rounded-full storm-cloud"
-          style={{
-            left: `${10 + i * 20}%`,
-            top: `${5 + i * 15}%`,
-            animationDelay: `${i * 0.4}s`,
-          }}
-        />
-      ))}
-    </>
-  );
-}
-
-function BurstEffect() {
-  return (
-    <>
-      {[...Array(5)].map((_, i) => (
-        <div
-          key={i}
-          className="absolute w-2 h-2 bg-red-500 rounded-full burst-cloud"
-          style={{
-            left: `${20 + i * 15}%`,
-            top: `${15 + i * 10}%`,
-            animationDelay: `${i * 0.1}s`,
-          }}
-        />
-      ))}
-    </>
   );
 }

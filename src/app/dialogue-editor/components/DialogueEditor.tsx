@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import CreateDialogueModal from "./CreateDialogueModal";
 import { getCharacterIcon } from "@/constants/characterInformation";
-import { Play, Pause, PencilSimple, Spinner } from "@phosphor-icons/react";
+import { Play, Pause, PencilSimple, Spinner, X } from "@phosphor-icons/react";
 import { useDialogueStore, type DialogueData } from "@/stores/dialogueStore";
 
 interface DialogueNode {
@@ -51,6 +51,8 @@ export default function DialogueEditor() {
 
   // Loading states
   const [isSaving, setIsSaving] = useState(false);
+  const [deletingNodeId, setDeletingNodeId] = useState<string | null>(null);
+  const [deletingTreeId, setDeletingTreeId] = useState<string | null>(null);
 
   // Load existing dialogue trees from database
   useEffect(() => {
@@ -220,6 +222,58 @@ export default function DialogueEditor() {
     });
   };
 
+  const deleteNode = (nodeId: string) => {
+    if (!editingTree) return;
+
+    setDeletingNodeId(nodeId);
+
+    // Simulate a small delay for better UX
+    setTimeout(() => {
+      // Remove the node
+      const updatedNodes = editingTree.nodes.filter((node) => node.id !== nodeId);
+
+      // Remove connections that reference this node
+      const updatedConnections = editingTree.connections.filter(
+        (connection) => connection.fromNodeId !== nodeId && connection.toNodeId !== nodeId
+      );
+
+      setEditingTree({
+        ...editingTree,
+        nodes: updatedNodes,
+        connections: updatedConnections,
+      });
+
+      setDeletingNodeId(null);
+    }, 300);
+  };
+
+  const deleteDialogueTree = async (treeId: string) => {
+    setDeletingTreeId(treeId);
+
+    try {
+      const response = await fetch(`/api/dialogue/${treeId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        // Remove from local state
+        setDialogueTrees((prevTrees) => prevTrees.filter((tree) => tree.id !== treeId));
+
+        // If the deleted tree was selected, clear selection
+        if (selectedTree?.id === treeId) {
+          setSelectedTree(null);
+          setEditingTree(null);
+        }
+      } else {
+        console.error("Failed to delete dialogue tree");
+      }
+    } catch (error) {
+      console.error("Error deleting dialogue tree:", error);
+    } finally {
+      setDeletingTreeId(null);
+    }
+  };
+
   // Keyboard shortcut for playtest toggle - moved here after function definitions
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -278,20 +332,32 @@ export default function DialogueEditor() {
                   {dialogueTrees.map((tree) => (
                     <div
                       key={tree.id}
-                      onClick={() => setSelectedTree(tree)}
-                      className={`p-3 rounded cursor-pointer transition-colors ${
+                      className={`p-3 rounded transition-colors relative group ${
                         selectedTree?.id === tree.id
                           ? "bg-blue-100 border border-blue-300"
                           : "bg-gray-50 hover:bg-gray-100"
                       }`}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 cursor-pointer" onClick={() => setSelectedTree(tree)}>
                         <span className="text-lg">{getCharacterIcon(tree.characterName)}</span>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-900 truncate">{tree.title}</p>
                           <p className="text-sm text-gray-500 capitalize">{tree.characterName}</p>
                         </div>
                       </div>
+
+                      {/* Delete button - appears on hover */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteDialogueTree(tree.id);
+                        }}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                        title="Delete dialogue tree"
+                        disabled={deletingTreeId === tree.id}
+                      >
+                        {deletingTreeId === tree.id ? <Spinner size={16} className="animate-spin" /> : <X size={16} />}
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -374,13 +440,29 @@ export default function DialogueEditor() {
                 {/* Simple Node Editor for now */}
                 <div className="space-y-4">
                   {(editingTree || selectedTree)?.nodes.map((node) => (
-                    <div key={node.id} className="border rounded-lg p-4">
+                    <div key={node.id} className="border rounded-lg p-4 relative group">
                       <div className="flex items-center gap-2 mb-3">
                         <span className="text-sm font-medium text-gray-700">Node: {node.id}</span>
                         <span className="text-xs px-2 py-1 bg-gray-100 rounded-full capitalize">
                           {node.type.toLowerCase()}
                         </span>
                       </div>
+
+                      {/* Delete node button - appears on hover */}
+                      {editingTree && (
+                        <button
+                          onClick={() => deleteNode(node.id)}
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                          title="Delete node"
+                          disabled={deletingNodeId === node.id}
+                        >
+                          {deletingNodeId === node.id ? (
+                            <Spinner size={16} className="animate-spin" />
+                          ) : (
+                            <X size={16} />
+                          )}
+                        </button>
+                      )}
 
                       {node.type === "DIALOGUE" && (
                         <div className="space-y-3">

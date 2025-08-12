@@ -123,7 +123,6 @@ Create a webhook to allow for user creation:
 - user.created
 - user.updated
 - email.created
-- email.updated
 
 Keep this tab open since you will need to add the necessary environment variables to `.env` later.
 

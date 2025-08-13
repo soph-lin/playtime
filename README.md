@@ -223,15 +223,23 @@ pnpm dev
 
 ## Package Scripts
 
-**Database Management**
-
-- **`prisma`**: Pulls the database schema and generates the Prisma client.
-
 **Development**
 
-- **`dev`**: Starts the Next.js development server.
+- **`dev`**: Starts the Next.js development server with Turbopack.
+- **`build`**: Builds the Next.js application for production.
+- **`start`**: Starts the production Next.js server.
 - **`lint`**: Runs ESLint to check for code quality issues.
+- **`check`**: Runs both linting and TypeScript type checking.
 - **`format`**: Formats the codebase using Prettier.
+- **`format:check`**: Checks if the codebase is properly formatted.
+
+**Database Management**
+
+- **`prisma`**: Generates the Prisma client and pushes database schema changes.
+
+**Utilities**
+
+- **`update-playlist-urls`**: Updates playlist URLs using the custom script.
 
 # License
 

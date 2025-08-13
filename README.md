@@ -31,8 +31,7 @@ The game streams songs using a hybrid Spotify and SoundCloud architecture, where
 - **Authentication**: Clerk, Auth0, NextAuth.js
 - **API Integration**: SoundCloud API, Spotify API
 - **Data Validation**: Zod
-- **Real-time Communication**: Pusher
-- **Webhooks**: Svix
+- **Webhooks**: Pusher, Svix
 - **API Routes**: Next.js API Routes
 
 ## **Database**

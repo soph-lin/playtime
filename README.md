@@ -1,25 +1,14 @@
 # Playtime
 
-**Playtime** is a web-based multiplayer game where players compete asynchronously to guess song titles as quickly as possible. The game features interactive 3D visuals, a cumulative leaderboard, and the ability to create and share custom playlists. It integrates with the SoundCloud API to fetch and play songs.
+**Playtime** is a story-driven multiplayer game with lively characters and fun mechanics. The overall vibe is inspired by Nintendo and party games like Gartic Phone.
 
----
+## Game Engine
 
-# Features
+The game uses a custom engine for gameplay and dialogue, with a node-based dialogue editor to easily write storylines instead of creating icky JSON or YAML files or worse yet, scripting to port someone else's dialogue engine implementation to the game??
 
-## Core Features
+## Music
 
-1. **Guess the Song**: Players listen to short audio clips and guess the song title. They are awarded more points for guessing faster and the first person to guess correctly wins the points.
-2. **Leaderboard**: Tracks player performance, including total points, average time, and games won.
-3. **Playlists**: Players have a large selection of songs and playlists created by admin.
-4. **Interactive 3D Visuals**: Powered by Three.js, the game includes dynamic 3D elements like animated titles and music notes.
-5. **Game Modes**: Players can select genres, artists, or playlists to customize their game experience.
-6. **Statistics**: Players can view past game statistics and achievements.
-
-## Additional Features
-
-- **Dynamic Difficulty**: Adjust game difficulty and round settings.
-- **Social Sharing**: Invite friends to play via shareable links.
-- **Responsive Design**: Optimized for desktop and mobile devices.
+The game streams songs using a hybrid Spotify and SoundCloud architecture, where Spotify provides the song titles and albums (ground truth) while SoundCloud provides the audio. Currently, only the admin can upload songs and playlists to the library, but I want to later implement an upload feature where users can upload their playlists.
 
 ---
 
@@ -27,50 +16,40 @@
 
 ## **Frontend**
 
-- **Framework**: React.js with TypeScript
-- **Styling**: TailwindCSS
+- **Framework**: Next.js 15 with React 19 and TypeScript
+- **Styling**: TailwindCSS v4 with PostCSS
 - **3D Visuals**: Three.js with React Three Fiber and Drei
-- **UI Components**: Radix UI, Phosphor Icons
+- **UI Components**: Radix UI, Material-UI (MUI), Phosphor Icons
+- **State Management**: Zustand
+- **Animations**: Framer Motion
+- **Icons**: Phosphor Icons
+- **Build Tools**: Turbopack
 
 ## **Backend**
 
-- **Framework**: Node.js with Next.js
-- **Authentication**: JSON Web Tokens (JWT)
-- **API Integration**: SoundCloud API
+- **Framework**: Next.js 15 with Node.js
+- **Authentication**: Clerk, Auth0, NextAuth.js
+- **API Integration**: SoundCloud API, Spotify API
 - **Data Validation**: Zod
-- **ORM**: Prisma
+- **Real-time Communication**: Pusher
+- **Webhooks**: Svix
+- **API Routes**: Next.js API Routes
 
 ## **Database**
 
 - **Database**: PostgreSQL
-- **Schema Management**: Prisma ORM
+- **Schema Management**: Prisma 6 ORM
+- **Migrations**: Prisma Migrations
+- **Type Safety**: Prisma Client with TypeScript
 
----
+## **Development Tools**
 
-# Project Structure
-
-## Directory Layout
-
-```
-playtime/
-├── prisma/ # Prisma schema and seed files
-├── public/ # Static assets
-├── src/
-│ ├── app/ # Next.js app directory
-│ │ ├── api/ # API routes
-│ │ ├── components/ # React components
-│ │ ├── lib/ # Utility libraries and helpers
-│ │ ├── scripts/ # Scripts for database and track management
-│ │ ├── types/ # TypeScript type definitions
-│ │ ├── globals.css # Global CSS styles
-│ │ ├── layout.tsx # Root layout
-│ │ └── page.tsx # Main page
-├── .github/ # GitHub workflows and templates
-├── .gitignore # Git ignore rules
-├── package.json # Project dependencies and scripts
-├── tsconfig.json # TypeScript configuration
-└── README.md # Project documentation
-```
+- **Package Manager**: pnpm
+- **Linting**: ESLint 9 with Next.js and Prettier rules
+- **Code Formatting**: Prettier with Prisma plugin
+- **Type Checking**: TypeScript 5.9
+- **Build Optimization**: Turbopack
+- **Hot Reloading**: Next.js Fast Refresh
 
 ---
 
@@ -78,7 +57,9 @@ playtime/
 
 ## Getting Started
 
-The below guide is if you want to set up the website locally. Otherwise, go to [https://playtime.sophli.in/](https://playtime.sophli.in/).
+If you want to play the game without hassle, go to [https://playtime.sophli.in/](https://playtime.sophli.in/). But if you want to set it up locally, boy you're in for a treat. Here's how.
+
+Note that the dialogue and music is stored in Supabase, and no I'm not giving it to you. So this is less like how to run the game locally, but how you can create something similar with a nice existing framework.
 
 ### Install pnpm package manager
 
@@ -106,17 +87,84 @@ In the profile.ps1 file that opens, put:
 
 Now whenever you have to run a `pnpm` cmd, you can type in `pn` (or whatever alias you created) instead.
 
-### Configure Clerk
+### Service Configuration
 
-Sign in or create an account on Clerk.
+Wow I had a blast doing this, and I'm sure you will too!! Don't worry though, you will only need to do it once.
 
-Create an application.
+I'm genuinely not sure why I wrote this part I feel like you're smart enough to figure it out, but I guess this is helpful for me because I keep forgetting how to do some configuration.
+
+#### Supabase
+
+Sign in or create an account on [Supabase](https://supabase.com/).
+
+Create a new project.
+
+Click on Connect (the button up top with a plug icon).
+
+Go to the ORMs tab.
+
+Keep this tab open since you will need to add `DATABASE_URL` and `DIRECT_URL` to `.env` later.
+
+#### SoundCloud
+
+Sign in or create an account on [SoundCloud](https://soundcloud.com/). If it's your first time using SoundCloud, use it for a few weeks. Otherwise, you'll get this message when you request an API key (or at least this is what happened to me):
+
+> Due to a high number of spammers, trying to get access to and abusing our APIs, we decided to no longer grant API access to very new or inactive accounts. You can do the following to mitigate this:
+> If this is only a new account for developing, you can send us a link to a different, more active account that you own - we need both the account URL (soundcloud.com/accountname) and the associated email address. It should include actions like comments, playlists, followed artists or uploaded tracks.
+> If you just started on SoundCloud, go ahead for a while - like some tracks, create a playlist, comment on a track or even upload your own first track. After that, please reach back out to us, so we can see that your account is used with genuine intention.
+
+Fortunately, I was able to get an API key by talking a little more to the support staff, but it's probably better if you use SoundCloud for a bit.
+
+Request an API key. As of 2025, you will have to do this through the chatbot (had to go on a wild goose chase through the platform to figure this out) at [https://help.soundcloud.com/hc/en-us/requests/new](https://help.soundcloud.com/hc/en-us/requests/new).
+
+Provide the following:
+
+- Website of your app
+- Redirect URI
+- How you will use the API
+
+Once they approve your request, go to [https://soundcloud.com/you/apps](https://soundcloud.com/you/apps).
+
+Keep this tab open since you will need to add `SOUNDCLOUD_CLIENT_ID` and `SOUNDCLOUD_CLIENT_SECRET` to `.env` later.
+
+#### Spotify
+
+Create an account on [Spotify](https://open.spotify.com/) if you don't already have one.
+
+Sign in to [https://developer.spotify.com/](https://developer.spotify.com/) using your Spotify account.
+
+Create a new app.
+
+Add Redirect URIs, assuming you are developing locally on port 3000:
+
+- http://localhost:3000
+- http://localhost:3000/admin
+
+Keep this tab open since you will need to add `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` to `.env` later.
+
+#### Pusher
+
+Sign in or create an account on [Pusher](https://pusher.com).
+
+Go to [Channels](https://dashboard.pusher.com/channels).
+
+Create a new app.
+
+Go to App Keys to find your tokens.
+
+Keep this tab open since you will need to add `PUSHER_APP_ID`, `NEXT_PUBLIC_PUSHER_APP_KEY`, `PUSHER_APP_SECRET`, and `NEXT_PUBLIC_PUSHER_CLUSTER` to `.env` later.
+
+#### Clerk
+
+Sign in or create an account on [Clerk](https://clerk.com).
+
+Create a new application.
 
 Create a webhook to allow for user creation:
 
 1. Endpoint URL: <YOUR_DEVELOPMENT_DOMAIN>/api/webhooks/clerk
 
-- In local development, `YOUR_DEVELOPMENT_DOMAIN` cannot be an `http` URL like `http://localhost:3000`. You will need to configure an `ngrok` server.
+- In local development, `YOUR_DEVELOPMENT_DOMAIN` cannot be an `http` URL like `http://localhost:3000`. You will need to configure an `ngrok` server. When the server terminates, you have to update the URL again on Clerk.
 
 2. Subscribe to events:
 
@@ -124,16 +172,16 @@ Create a webhook to allow for user creation:
 - user.updated
 - email.created
 
-Keep this tab open since you will need to add the necessary environment variables to `.env` later.
+Keep this tab open since you will need to add `CLERK_WEBHOOK_SECRET` to `.env` later.
 
 ### Install
 
 Clone the repository and go into the directory:
 
 ```
-git clone https://github.com/careerday23/prototype.git
+git clone https://github.com/soph-lin/playtime.git
 
-cd prototype
+cd playtime
 ```
 
 Install packages:

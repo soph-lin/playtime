@@ -1,6 +1,6 @@
 # Playtime
 
-**Playtime** is a story-driven multiplayer game with lively characters and fun mechanics. The overall vibe is inspired by Nintendo and party games like Gartic Phone.
+[**Playtime**](https://playtime.sophli.in) is a story-driven multiplayer game with lively characters and fun mechanics. The overall vibe is inspired by Nintendo and party games like Gartic Phone.
 
 ## Game Engine
 

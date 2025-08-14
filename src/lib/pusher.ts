@@ -17,7 +17,15 @@ export const pusherClient = new PusherClient(process.env.NEXT_PUBLIC_PUSHER_APP_
 
 // Types for Pusher events
 export type PusherEvent = {
-  type: "playerLeft" | "hostChanged" | "playerJoined" | "gameStarted" | "roundUpdate" | "scoreUpdate";
+  type:
+    | "playerLeft"
+    | "hostChanged"
+    | "playerJoined"
+    | "gameStarted"
+    | "roundUpdate"
+    | "scoreUpdate"
+    | "gameCompleted"
+    | "playerCompleted";
   data: Record<string, unknown>;
 };
 

@@ -40,6 +40,51 @@ export default function GameScreen() {
     toast.success("Game started!");
   });
 
+  // Listen for score updates
+  usePusher(`session-${session?.id}`, "scoreUpdate", (data: Record<string, unknown>) => {
+    if (data.playerId === session?.players.find((p) => p.userId === user?.id)?.id) {
+      // Update local state to reflect new score
+      setAttempts((data.attempts as number) || 0);
+
+      if (data.isCorrect) {
+        setIsCorrect(true);
+        setGameOver(true);
+
+        // Show scoring breakdown
+        const points = (data.points as number) || 0;
+        const attemptBonus = (data.attemptBonus as number) || 0;
+        const timeBonus = (data.timeBonus as number) || 0;
+
+        toast.success(
+          `Correct! 🎉 +${points} points\n` + `Base: 100 | Accuracy: +${attemptBonus} | Speed: +${timeBonus}`,
+          {
+            duration: 3000,
+            position: "top-center",
+            style: {
+              background: "#4CAF50",
+              color: "white",
+              fontSize: "1.1rem",
+              whiteSpace: "pre-line",
+            },
+          }
+        );
+      }
+    }
+  });
+
+  // Listen for game completion
+  usePusher(`session-${session?.id}`, "gameCompleted", () => {
+    toast.success("Game completed! 🎉", {
+      duration: 3000,
+      position: "top-center",
+      style: {
+        background: "#2196F3",
+        color: "white",
+        fontSize: "1.1rem",
+      },
+    });
+  });
+
   useEffect(() => {
     setIsClient(true);
     setLoading(true); // Start loading when component mounts
@@ -128,33 +173,13 @@ export default function GameScreen() {
     if (correct) {
       setGameOver(true);
 
-      // Award experience points for correct guess
+      // Award experience points for correct guess (separate from game points)
       if (user) {
         const basePoints = 10;
         const speedBonus = Math.max(0, 5 - attempts); // Bonus for fewer attempts
         const totalPoints = basePoints + speedBonus;
 
         await addExperience(totalPoints);
-
-        toast.success(`Correct! 🎉 +${totalPoints} XP`, {
-          duration: 2000,
-          position: "top-center",
-          style: {
-            background: "#4CAF50",
-            color: "white",
-            fontSize: "1.1rem",
-          },
-        });
-      } else {
-        toast.success("Correct! 🎉", {
-          duration: 2000,
-          position: "top-center",
-          style: {
-            background: "#4CAF50",
-            color: "white",
-            fontSize: "1.1rem",
-          },
-        });
       }
     } else {
       toast.error("Not quite! Try again!", {

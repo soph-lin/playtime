@@ -2,39 +2,57 @@
 
 import { useUser } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
+import useGameStore from "@/stores/gameStore";
+import { getAllSongs } from "@/services/songService";
+import { Song } from "@prisma/client";
 
-interface UserStats {
-  level: number;
-  levelExperience: number;
-  totalExperience: number;
+interface GameStats {
+  score: number;
+  songsCompleted: number;
+  totalSongs: number;
 }
 
 export default function UserStats() {
   const { user } = useUser();
-  const [stats, setStats] = useState<UserStats | null>(null);
+  const session = useGameStore((state) => state.session);
+  const [stats, setStats] = useState<GameStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      fetchStats();
+    if (session && user) {
+      fetchSongsAndUpdateStats();
     }
-  }, [user]);
+  }, [session, user]);
 
-  const fetchStats = async () => {
+  const fetchSongsAndUpdateStats = async () => {
     try {
-      const response = await fetch("/api/profile");
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data.user);
-      }
+      const songs = await getAllSongs();
+      updateStats(songs);
     } catch (error) {
-      console.error("Error fetching stats:", error);
-    } finally {
+      console.error("Error fetching songs:", error);
       setLoading(false);
     }
   };
 
-  if (!user || loading) {
+  const updateStats = (songs: Song[]) => {
+    if (!session) return;
+
+    // Find the current user in the session
+    const currentPlayer = session.players.find((p) => p.userId === user?.id);
+
+    if (currentPlayer) {
+      const totalSongs = songs.length;
+      setStats({
+        score: currentPlayer.score || 0,
+        songsCompleted: currentPlayer.correct || 0,
+        totalSongs,
+      });
+    }
+
+    setLoading(false);
+  };
+
+  if (!user || loading || !session) {
     return null;
   }
 
@@ -42,31 +60,33 @@ export default function UserStats() {
     return null;
   }
 
-  const progressPercentage = ((stats.levelExperience % 100) / 100) * 100;
+  const progressPercentage = stats.totalSongs > 0 ? (stats.songsCompleted / stats.totalSongs) * 100 : 0;
 
   return (
     <div className="absolute top-4 left-4 z-10">
       <div className="bg-black/50 backdrop-blur-sm rounded-lg p-4 text-white">
         <div className="flex items-center space-x-3 mb-3">
           <div className="text-center">
-            <div className="text-2xl font-bold text-yellow-400">Lv.{stats.level}</div>
-            <div className="text-xs text-gray-300">Level</div>
+            <div className="text-2xl font-bold text-yellow-400">{stats.score}</div>
+            <div className="text-xs text-gray-300">Points</div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-green-400">{stats.totalExperience}</div>
-            <div className="text-xs text-gray-300">Total XP</div>
+            <div className="text-lg font-bold text-green-400">
+              {stats.songsCompleted}/{stats.totalSongs}
+            </div>
+            <div className="text-xs text-gray-300">Songs</div>
           </div>
         </div>
 
-        {/* Experience Bar */}
+        {/* Progress Bar */}
         <div className="w-32">
           <div className="flex justify-between text-xs text-gray-300 mb-1">
-            <span>{stats.levelExperience % 100}</span>
-            <span>100</span>
+            <span>{stats.songsCompleted}</span>
+            <span>{stats.totalSongs}</span>
           </div>
           <div className="w-full bg-gray-700 rounded-full h-2">
             <div
-              className="bg-gradient-to-r from-yellow-400 to-orange-500 h-2 rounded-full transition-all duration-300"
+              className="bg-gradient-to-r from-green-400 to-blue-500 h-2 rounded-full transition-all duration-300"
               style={{ width: `${progressPercentage}%` }}
             ></div>
           </div>

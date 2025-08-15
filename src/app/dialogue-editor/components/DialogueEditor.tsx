@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import Input from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import CreateDialogueModal from "./CreateDialogueModal";
 import DialogueNode from "./DialogueNode";

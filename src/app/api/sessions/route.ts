@@ -82,7 +82,7 @@ export async function GET() {
 // start new game session
 export async function POST(req: NextRequest) {
   try {
-    const { playlistId, hostNickname } = await req.json();
+    const { playlistId, hostNickname, songCount } = await req.json();
 
     if (!playlistId) {
       return NextResponse.json({ error: "Missing playlistId" }, { status: 400 });
@@ -90,6 +90,10 @@ export async function POST(req: NextRequest) {
 
     if (!hostNickname) {
       return NextResponse.json({ error: "Missing hostNickname" }, { status: 400 });
+    }
+
+    if (!songCount || typeof songCount !== "number" || songCount <= 0) {
+      return NextResponse.json({ error: "Missing or invalid songCount" }, { status: 400 });
     }
 
     // Validate host nickname
@@ -114,15 +118,58 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Get the playlist and validate song count
+    const playlist = await prisma.playlist.findUnique({
+      where: { id: playlistId },
+      include: {
+        songs: {
+          include: {
+            song: true,
+          },
+        },
+      },
+    });
+
+    if (!playlist) {
+      return NextResponse.json({ error: "Playlist not found" }, { status: 404 });
+    }
+
+    const totalSongsInPlaylist = playlist.songs.length;
+    if (songCount > totalSongsInPlaylist) {
+      return NextResponse.json(
+        {
+          error: `Requested ${songCount} songs, but playlist only has ${totalSongsInPlaylist} songs`,
+          maxSongs: totalSongsInPlaylist,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Randomly select songs from the playlist
+    const availableSongs = playlist.songs.map((ps) => ps.song);
+    const selectedSongs = [];
+    const usedIndices = new Set();
+
+    while (selectedSongs.length < songCount) {
+      const randomIndex = Math.floor(Math.random() * availableSongs.length);
+      if (!usedIndices.has(randomIndex)) {
+        usedIndices.add(randomIndex);
+        selectedSongs.push(availableSongs[randomIndex]);
+      }
+    }
+
+    const selectedSongIds = selectedSongs.map((song) => song.id);
+
     // Generate a unique code first
     const code = await generateUniqueCode();
 
-    // Create the game session with the code
+    // Create the game session with the code and selected songs
     const session = await prisma.gameSession.create({
       data: {
         code,
         status: "WAITING",
         playlistId,
+        selectedSongIds,
         players: {
           create: {
             nickname: hostNickname,

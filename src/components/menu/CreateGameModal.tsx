@@ -5,9 +5,13 @@ import Modal from "../ui/Modal";
 import { toast } from "react-hot-toast";
 import useGameStore from "@/stores/gameStore";
 import { GAME_CONFIG } from "@/constants/game";
-import { Playlist } from "@prisma/client";
+import { Playlist, Song } from "@prisma/client";
 import Dropdown from "../ui/Dropdown";
-import { Input } from "../ui/Input";
+import Input from "../ui/Input";
+
+interface PlaylistWithSongs extends Playlist {
+  songs: Song[];
+}
 
 interface CreateGameModalProps {
   isOpen: boolean;
@@ -16,9 +20,11 @@ interface CreateGameModalProps {
 }
 
 export default function CreateGameModal({ isOpen, onClose, onGameCreated }: CreateGameModalProps) {
-  const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [playlists, setPlaylists] = useState<PlaylistWithSongs[]>([]);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>("");
   const [hostNickname, setHostNickname] = useState("");
+  const [songCount, setSongCount] = useState<number>(10);
+  const [songCountText, setSongCountText] = useState<string>("10");
   const [isCreating, setIsCreating] = useState(false);
   const createGame = useGameStore((state) => state.createGame);
 
@@ -42,6 +48,9 @@ export default function CreateGameModal({ isOpen, onClose, onGameCreated }: Crea
     const selectedPlaylist = playlists.find((p) => p.name === playlistName);
     if (selectedPlaylist) {
       setSelectedPlaylistId(selectedPlaylist.id);
+      // Reset song count to minimum when playlist changes
+      setSongCount(10);
+      setSongCountText("10");
     }
   };
 
@@ -71,9 +80,15 @@ export default function CreateGameModal({ isOpen, onClose, onGameCreated }: Crea
       return;
     }
 
+    // Validate song count
+    if (songCount < 10 || songCount > maxSongCount) {
+      toast.error(`Please choose a number between 10 and ${maxSongCount}!`);
+      return;
+    }
+
     try {
       setIsCreating(true);
-      const session = await createGame(selectedPlaylistId, hostNickname);
+      const session = await createGame(selectedPlaylistId, hostNickname, songCount);
       if (session) {
         // Copy game code to clipboard
         navigator.clipboard.writeText(session.code);
@@ -95,6 +110,8 @@ export default function CreateGameModal({ isOpen, onClose, onGameCreated }: Crea
   };
 
   const selectedPlaylist = playlists.find((p) => p.id === selectedPlaylistId);
+  const availableSongs = selectedPlaylist?.songs?.length || 0;
+  const maxSongCount = availableSongs; // No arbitrary cap - use full playlist
 
   return (
     <Modal
@@ -131,7 +148,39 @@ export default function CreateGameModal({ isOpen, onClose, onGameCreated }: Crea
             value={selectedPlaylist?.name || null}
             className="text-sm"
           />
+          {selectedPlaylist && (
+            <p className="text-xs text-gray-500">{availableSongs} songs available in this playlist</p>
+          )}
         </div>
+
+        {selectedPlaylist && (
+          <div className="space-y-2">
+            <label htmlFor="songCount" className="block text-sm font-medium text-gray-700">
+              Number of Songs
+            </label>
+            <div className="flex items-center space-x-3">
+              <Input
+                id="songCount"
+                value={songCountText}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSongCountText(value);
+                  if (value === "") {
+                    setSongCount(0);
+                  } else {
+                    const count = parseInt(value);
+                    if (!isNaN(count)) {
+                      setSongCount(count);
+                    }
+                  }
+                }}
+                placeholder={`Choose 10-${maxSongCount} songs`}
+                className="flex-1"
+              />
+              <span className="text-xs text-gray-500">songs</span>
+            </div>
+          </div>
+        )}
 
         <div className="flex justify-end space-x-3">
           <button

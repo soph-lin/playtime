@@ -12,7 +12,7 @@ interface GameState {
     | null;
 
   // Actions
-  createGame: (playlistId: string, hostNickname: string) => Promise<GameState["session"]>;
+  createGame: (playlistId: string, hostNickname: string, songCount: number) => Promise<GameState["session"]>;
   joinGame: (code: string, nickname: string) => Promise<void>;
   leaveGame: (sessionId: string, playerId: string) => Promise<void>;
   startGame: () => Promise<void>;
@@ -25,14 +25,14 @@ const useGameStore = create<GameState>()(
       session: null,
 
       // Actions
-      createGame: async (playlistId: string, hostNickname: string) => {
+      createGame: async (playlistId: string, hostNickname: string, songCount: number) => {
         try {
           const response = await fetch("/api/sessions", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ playlistId, hostNickname }),
+            body: JSON.stringify({ playlistId, hostNickname, songCount }),
           });
 
           if (!response.ok) {
